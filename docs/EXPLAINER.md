@@ -2,7 +2,7 @@
 
 > Draft for private review. Statements about law and about Archipelago have not been reviewed by a lawyer or by the Archipelago maintainers. Facts are sourced or labeled in `notes/`.
 
-Working name. This page needs no technical background. The technical version is in [`PITCH.md`](PITCH.md) and [`notes/`](notes/).
+Working name. This page needs no technical background. The technical version is in [`PITCH.md`](PITCH.md). The design documents start at [`design/README.md`](design/README.md); early research is in [`notes/`](notes/).
 
 ## What is a multiworld randomizer?
 
@@ -24,39 +24,44 @@ Everything around that part is hard. Getting a game started feels like setting u
 - **Joining means typing a server address and a "port number"**, like a door number on a building. Those numbers can change (we think, not yet confirmed), and a router or firewall can block them.
 - **Each game needs its own helper program**, with its own setup guide. There are about 70 guides.
 - **You never hear about what happened.** The game runs for days, and nothing tells you "someone just found the item you've been waiting for."
-- **Running a game for friends** means typed commands and one shared password. Nothing like a control panel.
+- **Running a game for friends** means typed commands and one shared password. Nothing like a control panel. On the web host, the person who made a room is remembered by a random ID in their browser, a design that fit a volunteer project with no accounts. If that browser's cookies are cleared, the admin controls can be lost (from our reading of their public code, cited in design doc 10 section 1.2 and not yet re-checked; we do not know how any real site is set up).
 - **For people who make games,** adding a game means getting it approved by volunteers and merged into one shared project.
 
 Almost none of this is a flaw in the idea. These are design tradeoffs that suit technical users. Newcomers pay for them.
 
 ## What are we building?
 
-A much easier way to play the same kind of game, with the same games, for the same people.
+A much easier way to play the same kind of game, with the same games, for the same people. Everything we build lives on the web. We do not make a desktop app, a launcher or a patching tool. Our rule is simple: the second a player has to move or install a file, we have lost.
 
 **For players**
-1. A friend sends you a link.
-2. In the game, you pick your settings from a plain-language screen, press **Connect**, and you are in.
-3. No files to write, no port numbers, no patching steps for you to babysit.
+1. A friend sends you a link. You do not need an account to join.
+2. On a web page, you pick your settings from a plain-language screen (a game that includes our toolkit can show the same screen itself), press **Connect**, and you are in. The game connects straight to the room. On a console, you type a short pairing code into the web page instead.
+3. No files to write, no port numbers, and nothing from us to download or install. Other people may build helper tools that patch games, but you will not need one from us.
 4. You get an **inbox**: "While you were away you got 4 items, and Sam found your Hookshot." Optional alerts on your phone or in Discord.
 
 **For the person running the game**
-- One screen to see who is online, who is stuck, and to fix problems with a click.
+- A **waiting room** (the staging lobby) with a **ready check**. Running a game needs a quick account (a passkey or a Discord sign-in, one tap), so you can sign in from any device and never lose the room by clearing your browser. Joining never needs one. You see who has joined, who has connected their game, and who is not ready yet. You press Start only when everyone is green, so nobody finds out ten minutes in that a friend never got connected.
+- One screen to see who is online, who is stuck, and to fix problems with a click. Helpers can be given limited powers (a co-host who can run the game, or a moderator who can only keep order). Risky actions, like handing out every remaining item, ask you to confirm again first.
 - Easy-to-share "seeds", so everyone can play the exact same game again by pasting a short code.
 - A real race mode with a shared countdown.
 
 **For game makers**
-- Add this to a game with a small toolkit, and describe the game's items and rules in a simple format instead of writing lots of code.
+- Add this to a game with a small toolkit (an SDK), or speak our open protocol directly. Describe the game's items and rules as plain configuration data instead of writing lots of code (a starting direction, not final).
 - A way to test that a game can always be finished.
 - Ship updates on your own schedule.
 
 **What stays the same**
-We are not trying to replace anyone. Existing Archipelago games will work on day one, and their existing programs can connect. We want to be the easy front door to what they built.
+We are not trying to replace anyone. Existing Archipelago games keep working through a compatibility layer, and their existing programs can connect as players. Admin actions stay on the web page. We want to be the easy front door to what they built.
+
+## What is the waiting room?
+
+Before a game starts, the host opens a web page that lists every player. Each name shows a status: invited, joined, game connected, ready. Think of a pre-flight checklist. The host starts the game only when everyone is ready, or chooses to start without the people who are not. In a multiworld game one friend who never got connected can hold up the whole group, and a host who is not technical should not have to find that out in chat. The page also shows the fix, such as "send Sam the link again" or "Sam's console needs its pairing code." Details: [`design/09-connection-and-lobby.md`](design/09-connection-and-lobby.md).
 
 ## How will it make money?
 
 We charge for the service, never for other people's games.
 
-- **Game studios** pay us for a supported, first-party version built into their game while they are making it. This is the cleanest and earliest source of income.
+- **Game studios** pay us for a supported version built into their game while they are making it (a studio integration). This is the cleanest and earliest source of income.
 - **Hosts and communities** can pay for bigger, private, or longer-lasting game rooms.
 - **Players and communities** can pay for extras like phone alerts and Discord tools.
 - **Streamers and event runners** can pay for race tools and stream overlays.

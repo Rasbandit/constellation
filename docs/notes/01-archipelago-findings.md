@@ -1,5 +1,7 @@
 # Archipelago findings
 
+> Early research notes. Where `docs/design/` differs, the design docs and [`DECISIONS.md`](../design/DECISIONS.md) win. Numbers are superseded by doc 02 section 5 ([`02-architecture-and-scale.md`](../design/02-architecture-and-scale.md)).
+
 Research notes from reading the Archipelago repo (read-only, our own words with citations). Paths are relative to that repo, for anyone who wants to check. "Verified" means checked in code. "Inferred" means an agent's or my reading. Snapshot taken November 2026.
 
 Snapshot: Archipelago `main` at commit `4f9545f7` (2026-11-15). Counts come from ls, wc and grep.

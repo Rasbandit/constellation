@@ -1,5 +1,7 @@
 # Architecture sketch
 
+> Early research notes. Where `docs/design/` differs, the design docs and [`DECISIONS.md`](../design/DECISIONS.md) win. Numbers are superseded by doc 02 section 5 ([`02-architecture-and-scale.md`](../design/02-architecture-and-scale.md)).
+
 Early thinking, not a design. Everything here is a hypothesis to test.
 
 ## Principles
@@ -13,7 +15,7 @@ Early thinking, not a design. Everything here is a hypothesis to test.
 ## Layers
 
 ```
- Edges:     native edge        AP-compat edge        Web (console, inbox, API)
+ Edges:     native edge        compat edge           Web (console, inbox, API)
                  \                    |                    /
  Core:                 Room actors + event log + subscriptions
                                       |
@@ -42,6 +44,7 @@ Early thinking, not a design. Everything here is a hypothesis to test.
 Game shows a settings screen from the game's manifest. Player locks settings, enters a room key, presses connect. Options go up, validated against the same schema. When all slots are locked, the host starts generation. Results come back on the same connection. For consoles, a pairing code: the game shows a code and the player enters it on a website or phone.
 
 ## Patching and emulators (open)
+Third-party tools only (D-01): we build no patcher, connector or launcher.
 - Browser-side patching: ROM stays on the player's machine, a WebAssembly patcher applies the diff. Untested.
 - Runtime memory writes through one local connector, no patched file. Needs per-game memory maps.
 - Do not bundle emulator cores before checking licenses. Many are GPL.
@@ -66,7 +69,7 @@ Declarative manifest: game, version, items, locations, regions, connections, rul
 Readable word-based seed. Shareable settings string encoding options, seed and generator version. Daily and weekly seeds. Race seeds with hidden spoilers.
 
 ## Admin console
-Roles (owner, moderator, player). Live board. Per-slot actions: release, collect, kick, swap, rotate token, pause. Audit log with undo. API tokens and a Discord bot.
+Roles (owner, moderator, player). Final role names are owner, co-host and moderator (doc 10). Live board. Per-slot actions: release, collect, kick, swap, rotate token, pause. Audit log with undo. API tokens and a Discord bot.
 
 ## Open questions
 - Stay protocol-compatible indefinitely, or fork the protocol once we have enough games?

@@ -1,5 +1,7 @@
 # Legal notes
 
+> Early research notes. Where `docs/design/` differs, the design docs and [`DECISIONS.md`](../design/DECISIONS.md) win. Numbers are superseded by doc 02 section 5 ([`02-architecture-and-scale.md`](../design/02-architecture-and-scale.md)).
+
 Research notes, not legal advice. Take this to an IP and software lawyer before launch.
 
 ## What we checked in the Archipelago repo
@@ -22,8 +24,8 @@ Say "compatible with Archipelago". Do not imply affiliation. Search trademark da
 
 ## Publisher IP (the main risk)
 - Fan randomizers have mostly survived by distributing no game files and being free hobby projects.
-- Charging money increases exposure and attention. I recall Nintendo's 2024 settlement with the Yuzu emulator makers as an example of how it can go. **Verify.**
-- Rules we set: never host or distribute ROMs, patched files, keys or decryption tools. Patch on the player's machine. Do not sell anything derived from a publisher's game.
+- Charging money increases exposure and attention. We recall Nintendo's 2024 settlement with the Yuzu emulator makers as an example of how it can go. **Not verified; verify.**
+- Rules we set: never host or distribute ROMs, patched files, keys or decryption tools. Patching, where a game needs it, is done on the player's machine by third-party tools (D-01). Do not sell anything derived from a publisher's game.
 - Anti-circumvention law can apply to tools that bypass console protections. Separate risk. Ask a lawyer.
 
 ## Studio deals (cleaner path)
