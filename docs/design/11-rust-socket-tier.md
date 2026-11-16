@@ -1,6 +1,6 @@
 # 11. Rust socket and room tier: decision, shape, rules and spikes
 
-Internal design doc, 2026-11-16. Not for external use; any external text built from it needs the review in `CLAUDE.md`. Decision rows: D-78 (decided) and D-92 (proposed) in [DECISIONS.md](DECISIONS.md). Terms: [GLOSSARY.md](GLOSSARY.md). Evidence: `docs/notes/04-rust-socket-tier-evidence.md` (called note 04). We cite only pages note 04 opened. Anything else is marked "from memory, not verified". We measured nothing ourselves.
+Internal design doc, 2026-11-16. Not for external use; any external text built from it needs the review in `CLAUDE.md`. Decision rows: D-78 (decided), D-92 (deferred by D-99), D-97, D-98 and D-99 (decided) in [DECISIONS.md](DECISIONS.md). Terms: [GLOSSARY.md](GLOSSARY.md). Evidence: `docs/notes/04-rust-socket-tier-evidence.md` (called note 04). We cite only pages note 04 opened. Anything else is marked "from memory, not verified". We measured nothing ourselves.
 
 Labels: **[M]** measured by the cited author on their hardware (not by us); **[C]** counted or read from a page note 04 opened or a doc we read; **[E]** our estimate with the formula shown; **[A]** assumption or design target; **[V]** vendor or author claim; **[?]** from memory, not verified. Anything called a judgment is not data.
 
@@ -10,7 +10,7 @@ Labels: **[M]** measured by the cited author on their hardware (not by us); **[C
 
 - **Decided (owner, 2026-11-16, D-78):** the whole system is Rust, including the socket tier and the room runtime. An Elixir hybrid was evaluated and dropped; the evidence is in git history.
 - **Consequence for this doc:** the question is no longer which language. It is how to make an all-Rust socket and room tier safe, and what we must build ourselves. A failed spike (section 4) triggers an engineering response (tuning, restructuring, or a deeper redesign of that component), not a language change.
-- **Proposed (not decided, D-92):** run the edge (sockets) and the room runtime as two OS processes from rung 1, even on one box (section 1).
+- **Deferred (D-92, deferred by D-99 on 2026-11-16; start as one process):** run the edge (sockets) and the room runtime as two OS processes from rung 1, even on one box (section 1).
 - **Confidence:** low to medium. Every number below is [A], [E] or third-party. The spikes in section 4 replace them with measurements.
 
 ---
@@ -145,7 +145,7 @@ A runtime with built-in supervision and distribution would supply these; in Rust
 | Block | Approach | Estimate [E] |
 |---|---|---|
 | Directory client, TTL cache, epoch redirect | Lookup the owner, cache with TTL, follow redirects after an epoch change (doc 02 D5) | 600 to 1,000 lines, 1 to 2 weeks |
-| Pub/sub across processes (the mux) | tonic bidirectional streams, mTLS, reconnect, per-stream credit; one encoded `Arc<EncodedEvent>` per edge mailbox; loopback in the two-process shape | 1,500 to 2,500 lines, 3 to 4 weeks |
+| Pub/sub across processes (the mux) | link technology tabled by D-99 (Unix socket, QUIC or gRPC, chosen at the first split); mTLS, reconnect, per-stream credit; one encoded `Arc<EncodedEvent>` per edge mailbox; loopback in the two-process shape | 1,500 to 2,500 lines, 3 to 4 weeks |
 | Per-edge publisher and session queues, resync | Bounded `mpsc` per edge and per session (R3) | 400 to 800 lines, 1 week |
 | Presence | Presence for a room lives at the room owner as a lease table fed by heartbeats; rebuilt on failover from heartbeats; no cluster-wide presence CRDT (doc 09 section 10.1, doc 10; note 04 Q5) | 400 to 800 lines, 1 to 2 weeks |
 | Room registry and placement | Directory plus epoch fencing in Postgres (doc 02 D5); node membership via a gossip library such as Chitchat only if needed (gossip every 1 s to 3 nodes, phi threshold 8.0 [C, note 04 Q5]), which needs generation-stamped identities and dead-node handling | included in directory row; gossip adds 1 to 2 weeks if used |
@@ -181,7 +181,7 @@ Purpose: replace [A] and [E] values with measured ones and test the specific haz
 
 ### 4.2 S1: 100k idle WebSocket connections on one box
 
-- **Build:** a Rust gateway plus room runtime with a stub room, TLS in process (rustls), axum WebSocket, 30 s ping on a shared timer wheel.
+- **Build:** a Rust gateway plus room runtime with a stub room, TLS in process (rustls), `yawc` WebSocket (D-97), 30 s ping on a shared timer wheel.
 - **Variants:** (a) library defaults; (b) tuned buffers (R1); (c) `yawc` tuned, with the same buffer rules as (b) (D-97); (d) TLS terminated by a separate proxy; (e) variant (c) with permessage-deflate on, pooled compressors and `server_no_context_takeover`, to price compression. `fastwebsockets` is out: it has no deflate (its README, 2026-11-16).
 - **Measure:** `(RSS_N - RSS_0) / N` at N = 10k, 50k, 100k, 150k; `smaps_rollup`; kernel memory per socket; idle CPU; ping round trip p50 and p99; counting-allocator totals; the default-versus-tuned ratio on our crate versions.
 - **Pass (T1):** tuned at 100k at or below 32 KB per connection including TLS, idle CPU under 10 percent of one core per 100k [A]. **Soft miss:** 32 to 48 KB (update the doc 02 budget; 150k x 48 KB = 7.2 GB [E], still fits). **Failure:** above 48 KB tuned after one tuning pass.
