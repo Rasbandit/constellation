@@ -133,3 +133,24 @@ Internal draft, 2026-11-16, proposed and not final. One line per term, with the 
 | doc NN D1 | A decision inside a doc (cite as "doc 04 D1", never bare "D1") | each doc |
 | L1 to L15, W1 to W5, LD-01 to LD-18 (retired, summarized in D-73), O1 to O13 | Counsel questions (04 section 13); edge decisions (08); lobby decisions (09); ownership decisions (10) | 04, 08, 09, 10 |
 | RG1.x, Q1 to Q8 | Region gates and region requirements (06) | 06 sections 12, 1 |
+
+## H. Randomizer patterns and settings
+
+| Term | Definition | Owner |
+|---|---|---|
+| author group | Projects counted as one source of evidence because their code shares a lineage (OoTR and the SoH randomizer); used when applying the rule of three | 14 header |
+| trick, tier | A named, documented technique a rule may require (`trick`); an ordered world difficulty where each tier only adds ways (`tier`). Both fold to option tests before logic, so rules stay monotone (D-102) | 14 sections 3.1, 3.3 |
+| fill stages | Declared, ordered CFill passes, each with item and location filters, a check level and an in-stream retry cap (D-103) | 14 section 3.1 |
+| reference playthrough | The validator's sphere-by-sphere solution of a seed, which feeds hints, depth and spoilers | 14 section 3.1 |
+| golden seed | A committed settings string, seed phrase, generator id and expected bundle hash, rechecked in tests | 14 section 3.1 |
+| seed code | Symbols derived from the bundle hash and shown in game so players confirm they have the same seed (D-108) | 14 section 3.1 |
+| spoiler policy | Room or seed property: `none`, `creator_once`, `after_completion`, `public`, `metadata_only` (D-107) | 14 section 3.1 |
+| overlay | A build-time package of ordered edits to a base world, flattened into one canonical document (D-110) | 14 section 3.1 |
+| CTL | Proposed tracker layout format, an optional extension (D-111, open) | 14 section 3.1 |
+| option scope (`scope`) | Option attribute: `seed` (default; changes the game), `knowledge` (hints, spoilers; changes the seed and is shown to racers) or `cosmetic` (looks only; never hashed) (D-106) | 14 section 3.1, 15 section 2.1 |
+| settings file, room settings file | One player's choices for one game (`settings/1`), and the host's room-level choices (`room-settings/1`) (D-115) | 15 section 2 |
+| settings hash | SHA-256 of a settings file's canonical JSON with cosmetic-scope options removed; the lobby binds "options locked" to it | 15 section 2.1 |
+| preset | A settings file without a player name, published with a world or by a community; layers at most two deep | 15 section 2.6 |
+| common vocabulary | Reserved option keys with one platform-owned label and explanation in every game, such as `start_with` or `shared_deaths` (D-116) | 15 section 4 |
+| keep everyone moving (`keep_moving`) | Common option with levels `off`, `gentle`, `strong`; our plain-language replacement for a progression balancing number; per player, host may lock (D-117, decided) | 15 section 4.1 |
+| surprise block (`surprise`) | The part of a settings file that asks for a random value: `one_of` (equal odds), `chances` (percents that sum to 100) or `anywhere_between` (a whole number in a range) (D-118) | 15 section 3 |
