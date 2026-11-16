@@ -26,6 +26,8 @@
 | [`11-rust-socket-tier.md`](11-rust-socket-tier.md) | The all-Rust socket and room tier: the two-process day-one shape (proposed), Rust engineering rules, building blocks we write, spike plan S1 to S4 and pass criteria T1 to T8. Decisions D-78 (decided), D-92 (proposed), D-97 (WebSocket library), D-98 (Postgres layer) and D-99 (start as one process). |
 | [`12-start-small-ladder.md`](12-start-small-ladder.md) | The start-small ladder, Stage 0 to Stage 3: one rented machine first, bills, capacity, triggers, honest promises and doc edits. Decisions D-79 to D-91. |
 | [`13-cost-model.md`](13-cost-model.md) | The single source for cost: scenarios A to E, prices opened, formulas, break-even and sensitivity. Headline: at 100,000 games a day the estimated range is about $830 to $3,452 a month depending on scenario [E]. Decisions D-93 to D-96. |
+| [`14-randomizer-patterns.md`](14-randomizer-patterns.md) | What 16 popular randomizers teach us: a pattern catalog, which candidate primitives have enough evidence, the end-to-end author experience and the central services (shared core, one solver, generated tracker). Research notes in [`../research/randomizers/`](../research/randomizers/00-landscape.md). Decision ids still TBD. |
+| [`15-settings-file.md`](15-settings-file.md) | The standard player settings file and one plain-language vocabulary for every game (for example "Keep everyone moving" instead of progression balancing), "surprise me" randomness instead of bare weights, author style rules and import from existing player files. |
 | [`DECISIONS.md`](DECISIONS.md) | The decision log. |
 | [`GLOSSARY.md`](GLOSSARY.md) | The terms, label set and ID namespaces. |
 
