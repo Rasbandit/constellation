@@ -8,8 +8,7 @@ Working name. Early research for an easier way to play multiworld randomizers, p
 - [`docs/notes/01-archipelago-findings.md`](docs/notes/01-archipelago-findings.md): what we learned from reading Archipelago, with sources.
 - [`docs/notes/02-architecture-sketch.md`](docs/notes/02-architecture-sketch.md): early design thinking.
 - [`docs/notes/03-legal-notes.md`](docs/notes/03-legal-notes.md): licensing and legal research. Not legal advice.
-- [`docs/notes/04-socket-tier-evidence-beam.md`](docs/notes/04-socket-tier-evidence-beam.md): evidence for and against an Elixir (BEAM) socket tier.
-- [`docs/notes/05-socket-tier-evidence-rust.md`](docs/notes/05-socket-tier-evidence-rust.md): evidence from the Rust side for the same question.
+- [`docs/notes/04-rust-socket-tier-evidence.md`](docs/notes/04-rust-socket-tier-evidence.md): evidence for and against an all-Rust socket and room tier.
 
 ## Design documents
 
@@ -26,7 +25,7 @@ Internal drafts in [`docs/design/`](docs/design/), all proposed and not final. S
 - [`08-serverless-workers-and-edge.md`](docs/design/08-serverless-workers-and-edge.md): workers and edge.
 - [`09-connection-and-lobby.md`](docs/design/09-connection-and-lobby.md): joining, the staging lobby and the ready check.
 - [`10-identity-and-room-ownership.md`](docs/design/10-identity-and-room-ownership.md): accounts, room roles, sign-in and recovery.
-- [`11-socket-tier-language-study.md`](docs/design/11-socket-tier-language-study.md): socket tier language study and spike plan.
+- [`11-rust-socket-tier.md`](docs/design/11-rust-socket-tier.md): the all-Rust socket and room tier: shape, engineering rules, building blocks and spike plan.
 - [`12-start-small-ladder.md`](docs/design/12-start-small-ladder.md): the Stage 0 to Stage 3 start-small ladder below rung 1.
 - [`GLOSSARY.md`](docs/design/GLOSSARY.md): the terms used across the docs.
 - [`DECISIONS.md`](docs/design/DECISIONS.md): the decision log, including what is still open.

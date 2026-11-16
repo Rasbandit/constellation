@@ -6,7 +6,7 @@ Label rules: we label every number as measured, counted or estimated (`CLAUDE.md
 
 Sources opened for this document:
 - Cloudflare Durable Objects concepts: https://developers.cloudflare.com/durable-objects/concepts/what-are-durable-objects/
-- Phoenix, road to 2 million WebSocket connections (2015): https://www.phoenixframework.org/blog/the-road-to-2-million-websocket-connections
+- A 2015 public report of 2 million idle WebSocket connections on one 40-core, 128 GB machine (link kept in git history, as it pointed at a framework site we no longer reference).
 - Discord, how it stores trillions of messages (2023): https://discord.com/blog/how-discord-stores-trillions-of-messages
 - Microsoft Orleans overview: https://learn.microsoft.com/en-us/dotnet/orleans/overview
 
@@ -37,7 +37,7 @@ Each: choice, why, rejected alternatives.
 ### D2. Rust actor host on tokio, no actor framework, pure state machine core
 - **Choice.** `room-core` is a pure, synchronous, deterministic state machine: `apply(state, command) -> (events, replies)`. No IO, clocks or randomness inside; the runtime wraps it in a tokio task with a bounded mailbox.
 - **Why.** The same code runs in unit tests, in a deterministic simulator that injects crashes and reorderings, and in replay of a production log; moves between nodes are safe because the state is a value.
-- **Rejected.** Framework actors (Actix, Ractor): extra concepts for little gain. Erlang/Elixir: strong fit (Phoenix held 2M idle connections on one 40-core, 128 GB machine [M: Phoenix post]) but splits the team and stack from the Rust SDK and generator.
+- **Rejected.** Framework actors (Actix, Ractor): extra concepts for little gain. A second language for the socket tier: splits the team and stack from the Rust SDK and generator (the whole system is Rust, D-78; engineering rules in doc 11).
 
 ### D3. Delivery: at-least-once on the wire, exactly-once in effect, by cursors
 Wire form is owned by doc 01 D1.4; this section fixes the semantics.
@@ -63,7 +63,7 @@ Wire form is owned by doc 01 D1.4; this section fixes the semantics.
 
 ### D6. Connections terminate at the edge, not in the room runtime
 - **Choice.** Edge nodes (native edge, compat edge) hold sockets and sessions; room nodes hold none. Edge-to-room traffic runs over a few long-lived multiplexed streams per node pair. A room move re-points a session inside the edge; the player's socket never drops. Day one: edge and room share a process (role `all`); the edge is the first split (section 3.3). Doc 11 (D-78, open) recommends running them as two OS processes from rung 1, an edge process and a room runtime process joined by a local connection, so a room fault does not drop sockets; details in doc 11 sections 3.2 and 4.1.
-- **Why.** Moves and deploys do not kick players, and sockets scale on cheap memory-heavy nodes while rooms scale on CPU-heavy ones. Phoenix gained by sharding fan-out and replacing a per-connection heartbeat timer [M: Phoenix post].
+- **Why.** Moves and deploys do not kick players, and sockets scale on cheap memory-heavy nodes while rooms scale on CPU-heavy ones. The 2015 scale report [M: 2M-connection report] gained by sharding fan-out and replacing a per-connection heartbeat timer.
 - **Rejected.** Sockets inside the room actor: every move or deploy disconnects players, and the existing client's reconnect delay doubles with no cap [C: notes/01].
 
 ### D7. Generation fleet is separate from serving from day one, sandboxed per job
@@ -285,11 +285,11 @@ All inputs are in the table. Change an input and recompute with the formulas. We
 - Connection RAM: `C * m_conn` -> 2.4 GB / 24 GB / 240 GB [E].
 - Event rate: `ev = G*P*K*e/86400` -> 2.3k/s / 23k/s / 226k/s average; peak = 5x -> 11k / 113k / 1.13M per second [E]. This is the most sensitive input (K, e) and the first thing the load test must replace with a measurement.
 - Generation CPU: `cores = G*g*(1-h)*s_eff/86400`, `s_eff=(1-n)*s + n*s_nat` -> 41 / 174 / 632 average cores [E] (with n=0 at every rung: 41 / 316 / 2,260). Peak is 5x for sizing the burst pool, but the queue absorbs part of it; target is queue wait p95 under 30 s [A].
-- Keepalive: one CWP `ping` frame (D-31) per connection per `hb` = 30 s [A] in live rooms (15 s in the staging lobby): `C/30` -> 2.5k / 25k / 250k pings per second [E] (staging-lobby rooms are a small share of connections, so this is the live-room figure). Use one shared timer wheel, not a timer per connection (Phoenix found per-connection heartbeat timers piling up in one process mailbox [M: Phoenix post]).
+- Keepalive: one CWP `ping` frame (D-31) per connection per `hb` = 30 s [A] in live rooms (15 s in the staging lobby): `C/30` -> 2.5k / 25k / 250k pings per second [E] (staging-lobby rooms are a small share of connections, so this is the live-room figure). Use one shared timer wheel, not a timer per connection (the 2015 scale report found per-connection heartbeat timers piling up in one process mailbox [M: 2M-connection report]).
 
 ### 5.2 Connections per node and memory per connection
 
-- Reference: Phoenix reached 2M idle-ish WebSocket connections on one 40-core, 128 GB machine [M: Phoenix post, 2015, Erlang, chat benchmark with few messages, limited by `ulimit`]; its load generators topped out near 40-60k connections per client IP, so large tests need many client addresses [M] (section 8).
+- Reference: a 2015 report reached 2M idle-ish WebSocket connections on one 40-core, 128 GB machine [M: 2M-connection report, chat benchmark with few messages, limited by `ulimit`]; its load generators topped out near 40-60k connections per client IP, so large tests need many client addresses [M] (section 8).
 - Our budget [A]: 32 KB per connection (TLS session about 10 KB, two 4 KB buffers, session state 2 KB, queue headroom); 150k connections per edge node = 4.8 GB. The limits are file descriptors, TLS handshake CPU on mass reconnect and bandwidth. Plan 150k/node [A], test to 300k.
 - Mass reconnect: handshakes dominate. At 1,500 handshakes/s/core [?] an 8-core edge admits about 12k/s, so 150k reconnects spread over 15 s with jitter; session-resumption tickets cut this.
 
@@ -457,7 +457,7 @@ Sensitivity [E]: with no native generation (n=0) at R2 the total is about $29.7k
 
 ## 7. Comparable systems: lessons
 
-Cited from pages we opened [M]: **Discord** (store toil: 177 Cassandra nodes, hot partitions; fix by request coalescing in a thin Rust layer; taken: D11, keep the database role small, watch hot rooms). **Phoenix** (2M connections on one machine, but limits were file descriptors, per-connection heartbeat timers, one pubsub process, and about 40-60k connections per test-client IP; taken: one timer wheel, shard fan-out, many client IPs). **Durable Objects** (named single-threaded objects, location hints, hibernation, alarms, 10 GB per-object cap; taken: D1, D9, idle eviction, due-time wakeups, bound room size). **Orleans** (virtual actors, managed directory, shedding, 90 s failure detection in 9.x, stateless workers, reminders; taken: D5, memory-pressure eviction, generation workers as stateless workers).
+Cited from pages we opened [M]: **Discord** (store toil: 177 Cassandra nodes, hot partitions; fix by request coalescing in a thin Rust layer; taken: D11, keep the database role small, watch hot rooms). **A 2015 2M-connection report** (2M connections on one machine, but limits were file descriptors, per-connection heartbeat timers, one pubsub process, and about 40-60k connections per test-client IP; taken: one timer wheel, shard fan-out, many client IPs). **Durable Objects** (named single-threaded objects, location hints, hibernation, alarms, 10 GB per-object cap; taken: D1, D9, idle eviction, due-time wakeups, bound room size). **Orleans** (virtual actors, managed directory, shedding, 90 s failure detection in 9.x, stateless workers, reminders; taken: D5, memory-pressure eviction, generation workers as stateless workers).
 
 From memory, not verified [?]: Akka cluster sharding (shard coordinator, split-brain resolver; our epoch fence plays that role). Slack channel servers placed by consistent hashing with a coordinator. Nakama: Go server, Postgres/CockroachDB, in-memory authoritative matches. Matrix: per-room state resolution across federated servers, expensive for large rooms; we avoid federation to keep single-writer. Steam Datagram Relay: players reach the nearest relay POP; informs edge termination near players.
 
@@ -485,7 +485,7 @@ Targets: 75k connections [E], 11k events/s peak [E]. Deliver: gateway+edge split
   5. Failover: kill primary; promote standby; players resume under 60 s [A], zero acked loss.
   6. Generation: replay a corpus of real seeds; measure `s` and `h`; queue wait p95 under 30 s at 5x average arrival.
   7. A 7-day soak with synthetic rooms with day-long idle periods.
-  Many load generators are needed: budget at least 5 client IPs per 300k connections [M: Phoenix per-IP ceiling].
+  Many load generators are needed: budget at least 5 client IPs per 300k connections [M: per-IP ceiling in the 2M-connection report].
 
 ### Rung 2: 1M games/day
 Targets: 750k connections, 113k events/s peak [E]. Deliver: separate edges and room pools, Postgres shards (6+), second active region, Firecracker pool (a hard prerequisite for any unreviewed upload; build earlier if that gate opens first), notify split, tournament pool, cache tuning.

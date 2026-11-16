@@ -11,7 +11,7 @@ Pages opened for this document:
 - Fly.io, dynamic request routing with `fly-replay`: https://fly.io/docs/networking/dynamic-request-routing/
 - PostgreSQL 18 docs, 26.2 log-shipping standby servers: https://www.postgresql.org/docs/current/warm-standby.html
 
-Cited via doc 02: Cloudflare Durable Objects concepts, Orleans overview, Discord storage post, Phoenix 2M connections.
+Cited via doc 02: Cloudflare Durable Objects concepts, Orleans overview, Discord storage post, a 2015 2M-connection report.
 
 Not opened (everything about them is [?]): Spanner, FoundationDB, TiKV, Matrix state resolution, Slack and Discord regional posts, and every AWS/GCP/Azure/Fly pricing page. We tried to open the Spanner and FoundationDB pages; extraction returned no usable text, so we cite neither.
 

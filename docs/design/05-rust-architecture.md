@@ -125,7 +125,7 @@ flowchart TB
 | `gen-worker` | gen-worker, gen-native, sandbox | Separate burstable pool (doc 02 open question 1) | job spec from Postgres queue | none (result to object store) |
 | `legacy-gen` | Python image | Inside a gen-worker sandbox lane (section 10) | stdin and stdout, schema-checked | none |
 
-The first process split is the edge (doc 02 section 3.3). Qualifier (D-78, open): doc 11 recommends the edge process and the room runtime process as two OS processes from rung 1, joined by a local connection speaking the same mux protocol; see doc 11 sections 3.2 and 4.1. It costs nothing in code: edge and room already talk through the `RoomLink` trait (section 7), and the in-process implementation is a channel.
+The first process split is the edge (doc 02 section 3.3). Qualifier (D-92, proposed): doc 11 proposes the edge process and the room runtime process as two OS processes from rung 1, joined by a local connection speaking the same mux protocol; see doc 11 section 1. It costs nothing in code: edge and room already talk through the `RoomLink` trait (section 7), and the in-process implementation is a channel.
 
 ---
 
@@ -135,7 +135,7 @@ Rule: Rust unless the table gives a reason.
 
 | Area | Choice | Why | Rejected |
 |---|---|---|---|
-| Servers, runtime, generator, registry, notifier, workers | **Rust** | Doc 02 D2 fixes Rust for the actor host; one stack, shared code with the SDK | Go (second stack, no shared code), Elixir (strong socket fit per doc 02 D2, second stack) |
+| Servers, runtime, generator, registry, notifier, workers | **Rust** | Doc 02 D2 fixes Rust for the actor host; one stack, shared code with the SDK | Go (second stack, no shared code) |
 | Rules, manifest validator, fill, frame codec, optional `cpk` apply (third-party tools) | **Rust, also compiled to WASM and C ABI** | Written once, used by generator, validator, trackers, SDK | Per-language rewrites (divergence risk, doc 01 section 5) |
 | Second, independent rule evaluator and bundle validator | **TypeScript** (small Python reference allowed) | Doc 01 section 7 step 5 and D2.9 need an independently written implementation for the "same answer everywhere" claim; it must not share code with the Rust one | Same code compiled twice (proves nothing about the spec) |
 | Legacy world generation | **Python, in the sidecar only** | Old worlds are Python plugins with in-process global state (doc 01 section 3.8); porting is the long-term plan | Rust rewrite up front |

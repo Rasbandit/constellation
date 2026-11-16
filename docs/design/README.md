@@ -23,7 +23,7 @@
 | [`08-serverless-workers-and-edge.md`](08-serverless-workers-and-edge.md) | What runs where: the cost of sockets, generation lanes, the edge web layer, and what restricted clients need from the protocol. |
 | [`09-connection-and-lobby.md`](09-connection-and-lobby.md) | Joining and the staging lobby: client classes, join links, the two ready checks, the host board, launch rules and diagnostics. |
 | [`10-identity-and-room-ownership.md`](10-identity-and-room-ownership.md) | Accounts, room roles (owner, co-host, moderator), sign-in and recovery without passwords, sessions, step-up for dangerous actions, and the credential table. |
-| [`11-socket-tier-language-study.md`](11-socket-tier-language-study.md) | All Rust or an Elixir socket tier: the evidence, options, recommendation (all Rust, edge and room as two processes), spike plan S1 to S5 and thresholds T1 to T8. Decision D-78. |
+| [`11-rust-socket-tier.md`](11-rust-socket-tier.md) | The all-Rust socket and room tier: the two-process day-one shape (proposed), Rust engineering rules, building blocks we write, spike plan S1 to S4 and pass criteria T1 to T8. Decisions D-78 (decided) and D-92 (proposed). |
 | [`12-start-small-ladder.md`](12-start-small-ladder.md) | The start-small ladder, Stage 0 to Stage 3: one rented machine first, bills, capacity, triggers, honest promises and doc edits. Decisions D-79 to D-91. |
 | [`DECISIONS.md`](DECISIONS.md) | The decision log. |
 | [`GLOSSARY.md`](GLOSSARY.md) | The terms, label set and ID namespaces. |
