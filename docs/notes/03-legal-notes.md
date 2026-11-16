@@ -47,3 +47,17 @@ No entry fees, prizes or wagers on races or tournaments.
 4. Terms of service, takedown process, and safe harbor setup.
 5. Studio contract template: licensing, indemnity, data protection.
 6. Entity structure and any open source compliance review of our dependency tree.
+
+## If we ever want a clean-room claim
+Today we cannot say we built anything without seeing their code. Our agents have read their public repo for research. A clean-room claim needs a deliberate process, set up before the work starts. Ask a lawyer to confirm the details.
+
+1. **Two separate groups.** An analysis group may read Archipelago's code and docs. A build group must not.
+2. **Specs only cross the wall.** The analysis group writes behavior specs in plain words: what the protocol does, what each packet means, what the file format contains. No code, no copied text, no pasted snippets.
+3. **A reviewer checks the specs** for leaked code or text before they reach the build group.
+4. **The build group works only from the specs** and from public documentation, and keeps a log of what it consulted.
+5. **Anyone who has read their code is out of the build group**, including agents. A fresh agent session with no access to the Archipelago repo or these research notes counts as a new member.
+6. **Keep records:** who read what, when, and which spec each module came from.
+
+Where this matters: the native generator and the world-format interpreter. It matters less for the room server, which only needs the published network protocol. Note that this repo's research notes cite their file paths, so they belong on the analysis side of the wall.
+
+Even without a clean room, MIT lets us reuse code if we keep their notices. The clean room is for cases where we want independence, not because the license requires it.
