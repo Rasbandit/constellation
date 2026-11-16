@@ -1,6 +1,6 @@
 # 14. Randomizer patterns: what 16 projects show, and what our standard should absorb
 
-> Internal design draft, 2026-11-16. Not reviewed by a different agent or a human; under [`CLAUDE.md`](../../CLAUDE.md) nothing here leaves this repo until that review and a human sign-off. Our own writing: it cites the research notes in [`../research/randomizers/`](../research/randomizers/) (00 landscape, project notes 01 to 16, batch summaries A to D) and reproduces no project's code, text or data. Every number is labeled **counted** (taken from a note, which says how it was counted, or counted by us over the notes), **estimated**, **design value** or **not verified**. Every "count of 16" below is **counted by us from the notes on 2026-11-16**; a note credits a feature only where its author read the code, so a project without credit may still have the feature in code nobody opened. Terms: [`GLOSSARY.md`](GLOSSARY.md). Decision ids (D-nn) are in [`DECISIONS.md`](DECISIONS.md); rows proposed here are `D-TBD-a` and so on.
+> Internal design draft, 2026-11-16. Reviewed by a different agent on 2026-11-16 (adversarial review on PR 1); not reviewed by a human. Under [`CLAUDE.md`](../../CLAUDE.md) nothing here leaves this repo until that review and a human sign-off. Our own writing: it cites the research notes in [`../research/randomizers/`](../research/randomizers/) (00 landscape, project notes 01 to 16, batch summaries A to D) and reproduces no project's code, text or data. Every number is labeled **counted** (taken from a note, which says how it was counted, or counted by us over the notes), **estimated**, **design value** or **not verified**. Every "count of 16" below is **counted by us from the notes on 2026-11-16**; a note credits a feature only where its author read the code, so a project without credit may still have the feature in code nobody opened. Terms: [`GLOSSARY.md`](GLOSSARY.md). Decision ids (D-nn) are in [`DECISIONS.md`](DECISIONS.md); rows proposed here are D-102 to D-114.
 
 **Project key** (note number and short name, used everywhere below): 01 OoTR, 02 SoH randomizer, 03 OoTMM, 04 wwrando, 05 Randovania, 06 RandomizerCore plus RandomizerMod (Hollow Knight), 07 wotw-seedgen (Ori), 08 LADXR, 09 ALttPR, 10 VARIA, 11 Worlds Collide, 12 z17 (ALBW), 13 UPR ZX, 14 SoulsRandomizers (read for ideas only; restrictive license), 15 KH2 Randomizer, 16 PopTracker.
 
@@ -12,8 +12,8 @@
 
 **Where the field is fragmented.**
 - **Logic representation: five styles.** Host-language code in 7 projects (02, 08, 09, 10, 11, 12, 15), expression strings in data files in 6 (01, 03, 04, 06, 14, 16), one custom language (07), one typed graph database (05), one cost-valued rule model (10) (counted). Code-held logic can only be read by its own runtime, so trackers and other platforms rewrite it by hand: PopTracker packs re-encode rules (16 section 13), OpenTracker re-encodes ALttPR (09 section 13), SoH logic exists again in Python in an external Archipelago fork (02 section 10), and Archipelago vendors LADXR and VARIA whole (08 section 1, 10 section 1).
-- **Settings strings: five encodings.** Positional bit-packed and version-bound in 6 (01, 04, 05, 06, 13, 15), difference from defaults in 2 (03, 08), named flags in 2 (11, 14), an undecodable hash slug in 1 (07), none in 1 (02); 09 and 10 key seeds by a server-side id (counted).
-- **Randomness.** Most use the language's default generator (Python `random`, .NET `System.Random`, Java `java.util.Random`); only 07 names its algorithm (PCG) and tests seeds across operating systems; 09 uses an unseedable generator, so a seed exists only as a stored result (notes 07, 09, batch B section 3).
+- **Settings strings: five encodings.** Positional bit-packed and version-bound in 6 (01, 04, 05, 06, 13, 15), difference from defaults in 2 (03, 08), named flags in 2 (11, 14), an undecodable hash slug in 1 (07), none in 2 (02; 12, which shares preset files instead); 09 and 10 key seeds by a server-side id; 16 generates nothing (counted).
+- **Randomness.** Most use the language's default generator (Python `random`, .NET `System.Random`, Java `java.util.Random`); only 07 uses a named library algorithm (PCG) and tests seeds across operating systems; 03 ships its own small xorshift-family generator, not tested across operating systems; 09 uses an unseedable generator, so a seed exists only as a stored result (notes 03, 07, 09, batch B section 3).
 - **Testing.** Thin or absent for logic in 02, 10, 11, 12, 13 and 14 (counted from those notes); strong in 05 (349 test files, counted) and 16 (42 test files plus fuzzing, counted).
 - **Difficulty.** Named trick toggles, ordered tiers, per-trick levels, numeric costs and skill profiles all exist, each in a different spelling (section 2.3).
 
@@ -30,7 +30,7 @@
 
 What stays out of the format: ROM, disc and game-file writers, runtime hooks, Lua or scripting in rules, tile-level map generation (08), and order-sensitive item effects (06). Those are the residue already named in doc 07 section 6.
 
-**What we should not standardize**, though several projects do it: secret build keys or private race modules (04, 09, 10), drawing a new seed when generation fails (12, 15), silent coercion of conflicting options (02, 04, 08, 13), positional settings strings, and floating-point weights (13, 15).
+**What we should not standardize**, though several projects do it: secret build keys or private race modules (04, 09, 10), drawing a new seed when generation fails (12, 15), coercing conflicting options instead of rejecting them (silently in 02 and 04; with a printed or reported change in 08 and 13), positional settings strings, and floating-point weights (13, 15).
 
 ## 2. Pattern catalog
 
@@ -54,7 +54,7 @@ What stays out of the format: ROM, disc and game-file writers, runtime hooks, Lu
 
 | Pattern | What it is | Projects | Count | Evidence | Verdict and reason |
 |---|---|---|---|---|---|
-| Named, parameterized macros in data | Shared rule fragments, inlined by substitution | 01 (156), 03 (992 across three files), 04 (307), 05 (670 templates), 06 (162), 07 (all counted in the notes) | 6 | High | **Core**, already (`defs`). The static cycle check matters: 03's parser had none found (03 section 4). |
+| Named, parameterized macros in data | Shared rule fragments, inlined by substitution | 01 (156), 03 (992 across three files), 04 (307), 05 (670 templates), 06 (162), 07 (2 top-level macros); all counted in the notes | 6 | High | **Core**, already (`defs`). The static cycle check matters: 03's parser had none found (03 section 4). |
 | Helper predicates in code | "Can light torches", "can kill most things" | 02, 08, 09, 10, 12, 15 | 6 | High | Same need as above, spelled in code; together 12 of 16 factor logic into named helpers (counted). |
 | Cached reachability facts (waypoints) | A named fact granted when its rule holds, distinct from substitution | 06 (waypoints), 05 (events), 01 (`here` and `at` local events) | 3 | Medium | **Core** as `events` (exists). `here` and `at` become an authoring macro that compiles to an anonymous event. |
 | Option-gated content layers | Groups of nodes switched on by settings | 05 (layers), 03 (2,338-line transform in code), 07 (snippets) | 3 | Medium | **Core** via `templates` with `when` (doc 07 section 3.1); a `layer` shorthand is **Tool** sugar. |
@@ -94,9 +94,9 @@ What stays out of the format: ROM, disc and game-file writers, runtime hooks, Lu
 
 | Pattern | What it is | Projects | Count | Evidence | Verdict and reason |
 |---|---|---|---|---|---|
-| Progressive chains | One item granting increasing levels | 01, 02, 03, 04, 05, 06, 09, 16 | 8 | High | **Core**, already (`progressive`, `level`). |
+| Progressive chains | One item granting increasing levels | 01, 04, 06, 16 (only these notes describe it; others not checked) | 4 | High | **Core**, already (`progressive`, `level`). |
 | Pool presets by scarcity | Plentiful to minimal pools from options | 01, 02, 09, 10 | 4 | High | **Core**, already: item `count` as an expression over options. |
-| Trap disguise | A trap takes the look of an item drawn from a pool | 01, 02, 03 | 3 (one family) | Medium | **Core recipe**: a seeded `select` per trap written to slot data. No primitive. |
+| Trap disguise | A trap takes the look of an item drawn from a pool | 01, 02 | 2 (one author group) | Medium | **Core recipe**: a seeded `select` per trap written to slot data. No primitive. |
 | Demote items that open nothing | After options resolve, useless progression becomes filler | 04 | 1 | Medium | **Tool**: a static analysis we run for every world (batch A section 3). |
 | Location categories with toggles | Tags such as minigame, major, minor, each toggled for progression | 04 (22 toggles), 05, 10 (major and minor), 14 (race categories) | 4 | High | **Core** via tags, `item_rule` and location `kind` computed from options. |
 
@@ -107,7 +107,7 @@ What stays out of the format: ROM, disc and game-file writers, runtime hooks, Lu
 | Assumed fill | Place each item where it is reachable assuming the rest is held | 01, 02, 03, 08 (check after random placement), 09, 12 | 6 | High | **Core**: the family behind CFill v1 (doc 01 D2.7). |
 | Forward fill variants | Walk like a player, pick what opens the most, place in reachable slots | 04, 05, 06, 07, 08, 10, 11 | 7 | High | **Tool**: named fill variants a generator may offer at the Valid tier; CFill v1 stays the Reproducible reference. |
 | Named fill stages | Shops, rewards, own-dungeon keys, songs, then progression, then filler | 01, 02, 03, 04, 06, 08, 09, 12 | 8 | High | **Core**: declared stages in CFill (section 3). |
-| Bounded retries | Fixed retry caps per stage and per seed | 01, 02, 03, 05, 07, 08, 10, 12, 13, 14, 15 | 11 | High | **Core**, already (doc 01 D3.2 item 4): retries live in the stream, so failures reproduce. |
+| Bounded retries | Fixed retry caps per stage and per seed | 01, 02, 03, 07, 08, 10, 12, 13, 14, 15 (05 retries on failure; its note gives no cap) | 10 | High | **Core**, already (doc 01 D3.2 item 4): retries live in the stream, so failures reproduce. |
 | New seed on failure | Draw a fresh seed after a failed attempt | 12 (only when the user gave none), 15 (always) | 2 | High | **Reject**: the result no longer matches the input the user typed (15 section 13). |
 | Documented fill guarantees | Written proof of which progression set is chosen | 06 | 1 | High | **Tool**: the CFill spec states its guarantees the same way. |
 | Commutativity as a checked invariant | Same items in different orders must give the same reachability | 06 | 1 | High | **Core** check, needed only for extensions; pure worlds are commutative by construction (monotone counters). |
@@ -173,14 +173,14 @@ What stays out of the format: ROM, disc and game-file writers, runtime hooks, Lu
 
 | Pattern | What it is | Projects | Count | Evidence | Verdict and reason |
 |---|---|---|---|---|---|
-| In-game seed code | Icons, names or a check value shown in game so players confirm the same seed | 01, 02, 03, 04, 05, 09, 11, 12, 13, 15 | 10 | High | **Core** (section 3). |
+| In-game seed code | Icons, names or a check value shown in game so players confirm the same seed | 01, 02, 04, 05, 09, 11, 12, 13, 15 (03 has an 8-character seed hash; its note does not say it is shown in game) | 9 | High | **Core** (section 3). |
 | Word-based names | Seeds or settings named by words | 04, 05, 07 | 3 | High | **Core**, already (seed phrase, doc 01 D3.1). |
 | Seed-affecting versus cosmetic settings | Flag on each option; cosmetics excluded from shared strings and hashing | 01, 04, 05, 08, 09, 10, 11, 13, 15 | 9 | High | **Core** option attribute `scope`. |
 | Information settings change the seed | Hint and spoiler settings perturb the stream so racers cannot compare | 03, 04, 08, 15 | 4 | High | **Core** `scope: knowledge`. |
 | Difference-from-defaults string | Only non-default values, versioned | 03, 08 | 2 | High | **Core**, already (doc 01 D3.1). |
 | Positional bit-packed string | Bit positions in declaration order, version-bound | 01, 04, 05, 06, 13, 15 | 6 | High | **Reject**: every new option needs a migration (13 section 13). |
 | Per-subsystem random streams | Items, enemies, cosmetics or each feature get their own stream | 04, 06, 13, 14 | 4 | High | **Core**, already (HKDF per hook, doc 01 D3.1). |
-| Named generator with cross-OS test | A specified PRNG; seed files compared across operating systems in CI | 07 (03 names its own small generator) | 2 | High | **Core**, already (ChaCha8 and the Reproducible tier). |
+| Named generator with cross-OS test | A specified PRNG; seed files compared across operating systems in CI | 07 (03 has its own small generator, no cross-OS test) | 1 | Medium | **Core**, already (ChaCha8 and the Reproducible tier). |
 | Secret build key or private race code | A secret mixed into race seeds, absent from public code | 04, 09, 10 | 3 | High | **Reject**: no third party can regenerate the seed. Commit-reveal covers fairness (doc 01 D3.3). |
 
 ### 2.14 Spoilers, proof, testing, tracking, delivery, plando, multiworld
@@ -223,7 +223,7 @@ Status words: **Go**: evidence met and not composable; write vectors and two imp
 | `overlay` | 06, 05 (layers) (2) | Not met | Build-time patch, not runtime behavior | **Schema** (registry package kind), build-time only | `overlay.cgm`: `base: {id, hash}`, ordered `edits: [{target: def|rule|pool, op: replace|extend|substitute}]`, `optional_ref` for absent dependencies; own ledger range | `cgm build` flattens base plus overlays to one canonical document and hash; no overlay exists at load time | Uses doc 07 section 5.2 to classify each overlay as loosening or tightening |
 | `objectives` | 11, 10 (2) | Not met | Composable: `select` over an objective table with rolled counts, goal as `at_least(N, conditions)` | **Recipe** plus **Schema** `at_least` | Combinator `{"at_least": n, "of": [rule...]}`; result keys in `slot_data` for the game to apply | Monotone (a count of true monotone rules) | Counted goals (01, 03, 08, 09) are the same recipe with `group_count` |
 | `spoiler_policy` | 09 (four modes); toggles in 04, 08, 11, 15 | Met as a policy | Not a world concern | **Schema** in doc 01 D3.3 | Room or seed property `spoilers: none|creator_once|after_completion|public|metadata_only` | `creator_once` and `none` salt nothing; spoiler presence is a knowledge-scope input (next rows) | Storage is doc 04 section 7.4 |
-| `seed_code` | 01, 02, 03, 04, 05, 09, 11, 12, 13, 15 (9) | Met | Derivable from the bundle hash | **Service** plus a small **Schema** field | World declares `seed_code: {symbols: table_key, length: 5}`; code = first `length` symbols indexed from the bundle hash bits (defined extraction, vectors) | Pure function of the bundle hash | Replaces 13's check value and 15's icons with one derivation |
+| `seed_code` | 01, 02, 04, 05, 09, 11, 12, 13, 15 (8) | Met | Derivable from the bundle hash | **Service** plus a small **Schema** field | World declares `seed_code: {symbols: table_key, length: 5}`; code = first `length` symbols indexed from the bundle hash bits (defined extraction, vectors) | Pure function of the bundle hash | Replaces 13's check value and 15's icons with one derivation |
 | `scope` (affects seed, knowledge, cosmetic) | 01, 04, 05, 08, 09, 10, 11, 13, 15 (9); knowledge salting in 03, 04, 08, 15 | Met | Option attribute | **Schema** in doc 01 D2.3 | `scope: seed` (default; in settings string and stream derivation), `knowledge` (hints, spoiler; in both, and shown to racers), `cosmetic` (never hashed, applied by the client) | Cosmetic options cannot reach `requires.primitives` inputs; the validator rejects a cosmetic option referenced by a rule | One attribute replaces `shared`, `permalink`, `aesthetic` and `cosmetic` flags |
 | `redistribute` | 13, 15 partial (2) | Not met | Not composable (integer budget with floors and rounding) | **Park**; a third candidate may be pokemon_emerald's species randomization (doc 07 section 1.1; whether it redistributes stats is not verified) | `x.redistribute@1`: table, columns, total (keep or range), floor, ceiling, integer weights, largest-remainder rounding, `follow: relation` | Integer only, specified draws | `range_roll` (15 weapon stats) is a degenerate case |
 | `weighted_place` | 15 (1 as a world primitive); bias weights in 04, 05, 06, 08, 11, 14 | Met as a fill parameter, not as a world primitive | Bias is generator behavior | **Schema** as CFill bias parameters; world table **Park** | `fill.bias: {by: depth|age, curve: table_key}` with integer weights per (item class, depth band) | Integer weights, cumulative choice (doc 01 D3.2) | Absorbs `fair_forward_weighting` (11), depth transform (06), forward factor (08) |
@@ -233,12 +233,12 @@ Status words: **Go**: evidence met and not composable; write vectors and two imp
 | Logic tiers for trackers | 16, 06 (2) | Met through tricks and tiers | Tracker evaluates the rule at the room's settings, then with the next tier or all tricks on | **Service** | No new field; "inspectable" (16 only) parked | Same evaluator; no effect on generation | Merged into `trick` and `tier` |
 | Tracker layout schema (CTL) | 16 (1) | Not applicable (a format) | Defaults derivable from items, groups, regions and `pos` | **Ext** format, owner decision (section 6) | `tracker.ctl.json`: maps, marker style, a closed widget set (grid, array, tabs, group, item, map, text, include), named roots (wide, tall, broadcast, settings) | Display only | Uses `pos`; designed in our own words, not PopTracker's schema |
 | `pos` | 05, 07, 16 (3) | Met | Metadata | **Schema** | Optional `pos: {map: key, x: int, y: int}` on regions and locations | No logic effect | Feeds the editor and CTL |
-| Watch table | 16, 01, 07, 10, 15 (5) | Met | Already the `watch` block of the connector profile | **Schema** extension of doc 01 D4.3 | Add `source: memory|variable`, `width`, `mask`, `compare`, `sets: {location|item|event: key}`, `interval_ms` | Client-side only | No second format |
+| Watch table | 16, 01, 07, 10, 15 (5) | Met | Already the `watch` block of the connector profile | **Schema** extension of doc 01 D4.3 | Add `source: memory|variable`, `mask`, `compare`, `sets: {location|item|event: key}`, `interval_ms` | Client-side only | No second format |
 | Reference playthrough | 01, 02, 03, 04, 05, 07, 09, 10, 12, 15 (9) | Met | Solver output | **Service** plus conformance (doc 01 D2.9) | Bundle section `playthrough: [{sphere, collected: [loc keys], required: bool}]` plus `minimal_required` by removal | Canonical order: by sphere, then ledger order | Feeds hints, depth, difficulty, spoiler |
 | Golden seed | 05, 06, 07 (3) | Met | Test artifact | **Schema** for `tests/` | `tests/golden/*.json`: settings string, seed phrase, generator id and version, expected bundle hash | Requires a Reproducible-tier generator | Cross-OS and cross-implementation runs in conformance |
 | `item_rule` `same_group` | 01, 02, 04, 08, 09, 12 (5) | Met | Composable as one rule per group with `foreach` | **Recipe** plus sugar | `item_rule: {items: {tag: dungeon}, locations: {same_tag: dungeon}}` | Unchanged | None |
 | `always_allow` | 09 (1) | Not met | Needs item-dependent location rules, which the language lacks | **Park** | Not proposed | n/a | Try an event plus connection first |
-| `disguise` | 01, 02, 03 (2, one family) | Met by number | `select` per trap into slot data | **Recipe** | Recipe only | Seeded `select` stream | None |
+| `disguise` | 01, 02 (1) | Not met | `select` per trap into slot data | **Recipe** | Recipe only | Seeded `select` stream | None |
 | `exit_rule` (leave after taking) | 10 (1) | Not met | Event plus a connection out | **Recipe** (try first) | Recipe only | Monotone | None |
 | `permute` `fits`, `related`; `select` `band` | 13, 14 (2) | Not met | Not composable | **Park** as `permute@2` and `select@2` options | Fields `fits: {source_col, target_col}`, `related: relation`, `band: {key, start_pct, widen_pct, min}` | Integer comparisons | Same "content" family as `redistribute` |
 | `local_count` and fill knobs | 01, 05, 07 (3) | Met as parameters | Parameters of CFill | **Schema** in CFill | `fill.local_count`, `fill.bias` | Specified draws | With `fill_stages` |
@@ -370,7 +370,7 @@ Licenses are as recorded in the notes; none is legal advice. An importer is a to
 
 | Source | Form | Closeness to CGM | License (notes) | Path |
 |---|---|---|---|---|
-| OoTMM `data/world`, `data/macros` (03) | YAML areas, own expression grammar, parse-time folding of settings and tricks | High for grammar and folding; MM time slices need context axes; location binding lives in separate XML | MIT | **Partner** first: the closest grammar to ours; offer an exporter in their repo |
+| OoTMM `data/world`, `data/macros` (03) | YAML areas, own expression grammar, parse-time folding of settings and tricks | High for grammar and folding; MM time slices need context axes; location binding lives in separate XML | MIT | **Partner** first (decided, D-101): the closest grammar to ours; offer an exporter in their repo |
 | OoTR `data/World/*.json`, `LogicHelpers.json` (01) | JSON with comments; Python-syntax rule strings | Medium: regions, exits, events map; strings need a parser for a Python expression subset; age and time need context axes; location metadata is a Python table | MIT top level with GPLv2+ subfolders; which folder covers the data is not verified | **Partner** or **contribute** an exporter; counsel before any output is hosted |
 | wwrando `logic/*.txt` (04) | YAML-like locations, 307 text macros | Medium: no region graph; entrance access is macro rewriting (our `binds`) | MIT | **Contribute** an exporter, maintainers decide |
 | Randovania databases (05) | JSON requirement trees, typed nodes and docks, 13 games | High structurally | GPL-3.0; the note treats the database data as GPL-covered | **Partner only**: Randovania could emit CGM under its own terms; we neither convert nor host without counsel |
@@ -410,25 +410,25 @@ SoH (02, no top-level license), LADXR (08, MIT), ALttPR (09, MIT), VARIA (10, MI
 - **D3.2** item 6: the seed code is a defined extraction from the bundle hash, with vectors.
 - **D3.3** replace `spoilers: "none"` with the enum `none|creator_once|after_completion|public|metadata_only`; state that private race code and secret build keys are not used.
 - **D4.3** extend `watch` with `source`, `mask`, `compare`, `sets` and `interval_ms`.
-- New optional extension spec **CTL** (tracker layout), if the owner agrees (D-TBD-j).
+- New optional extension spec **CTL** (tracker layout), if the owner agrees (D-111).
 
-### 6.3 New rows for DECISIONS.md (ids TBD, all proposed unless marked open)
+### 6.3 New rows for DECISIONS.md (D-102 to D-114, all proposed unless marked open or needs-lawyer)
 
 | Id | Decision | Status | Rationale | Docs affected | Blocks |
 |---|---|---|---|---|---|
-| D-TBD-a | CGM v1 carries a difficulty model: `tricks` and `tiers`, folding to constants; numeric costs and skill profiles are the `x.cost` extension | proposed | 9 and 6 of 16 projects (counted); keeps rules monotone | 01, 07 | CGM v1 freeze |
-| D-TBD-b | CFill v1 takes declared fill stages, `local_count` and integer bias; retries stay in the stream; no new seed on failure | proposed | 8 projects stage fills (counted); reseeding breaks input-equals-output | 01, 07 | CFill vectors |
-| D-TBD-c | The hint engine is a platform service; plans are `x.hint_plan@1`, reachable-before by default | proposed | 11 projects have hints, 5 weighted plans (counted) | 01, 07 | Hint vectors |
-| D-TBD-d | One solver specification with two implementations: Rust for generation and plando, TypeScript for validator, tracker and preview | proposed | Reconciles "independent validator" with "one engine everywhere" | 01, 05, 07 | Validator build |
-| D-TBD-e | Option attribute `scope` (seed, knowledge, cosmetic) | proposed | 9 projects separate cosmetics, 4 salt the seed with information settings (counted) | 01 | Settings string |
-| D-TBD-f | Spoiler policy enum with `creator_once`; no private race code or secret build keys | proposed | Commit-reveal gives verifiable fairness (doc 01 D3.3) | 01, 04 | Race mode |
-| D-TBD-g | In-game seed code derived from the bundle hash | proposed | 10 projects (counted) | 01, CSDK | CSDK |
-| D-TBD-h | State axes: context axes as a recipe now with a spike on a non-Zelda world; `x.resource` after v1 | **open** (owner) | Evidence is one game family for context axes; resources are costly | 07 | CGM v2 scope |
-| D-TBD-i | Overlays are build-time registry packages flattened into one canonical document | proposed | Community extension without forks (06) | 01, 07, registry | Registry schema |
-| D-TBD-j | A generated tracker is first-party; the CTL layout format is an optional extension we maintain | **open** (owner) | One strong source (16); a format we would own forever | 01, 03 | Tracker build |
-| D-TBD-k | Importer and partnership policy: exporters live upstream under their licenses; no import of GPL, LGPL, unlicensed or restrictive sources without counsel; never SoulsRandomizers | **needs-lawyer** | License rules in the notes | 03, 04 | Any import |
-| D-TBD-l | Content primitives (`redistribute`, `fits`, `related`, `band`, `scale_by_tier`) parked until a third world; run a content-world spike | proposed | Two projects each, one ideas-only | 07 | Content worlds |
-| D-TBD-m | Language 2 adds `trick` tests and `at_least` | proposed | Objectives (11, 10) and tricks need them; both monotone | 01, 07 | Rule vectors |
+| D-102 | CGM v1 carries a difficulty model: `tricks` and `tiers`, folding to constants; numeric costs and skill profiles are the `x.cost` extension | proposed | 9 and 6 of 16 projects (counted); keeps rules monotone | 01, 07 | CGM v1 freeze |
+| D-103 | CFill v1 takes declared fill stages, `local_count` and integer bias; retries stay in the stream; no new seed on failure | proposed | 8 projects stage fills (counted); reseeding breaks input-equals-output | 01, 07 | CFill vectors |
+| D-104 | The hint engine is a platform service; plans are `x.hint_plan@1`, reachable-before by default | proposed | 11 projects have hints, 5 weighted plans (counted) | 01, 07 | Hint vectors |
+| D-105 | One solver specification with two implementations: Rust for generation and plando, TypeScript for validator, tracker and preview | proposed | Reconciles "independent validator" with "one engine everywhere" | 01, 05, 07 | Validator build |
+| D-106 | Option attribute `scope` (seed, knowledge, cosmetic) | proposed | 9 projects separate cosmetics, 4 salt the seed with information settings (counted) | 01 | Settings string |
+| D-107 | Spoiler policy enum with `creator_once`; no private race code or secret build keys | proposed | Commit-reveal gives verifiable fairness (doc 01 D3.3) | 01, 04 | Race mode |
+| D-108 | In-game seed code derived from the bundle hash | proposed | 9 projects (counted; 03 has a seed hash whose in-game display its note does not state) | 01, CSDK | CSDK |
+| D-109 | State axes: context axes as a recipe now with a spike on a non-Zelda world; `x.resource` after v1 | **open** (owner) | Evidence is one game family for context axes; resources are costly | 07 | CGM v2 scope |
+| D-110 | Overlays are build-time registry packages flattened into one canonical document | proposed | Community extension without forks (06) | 01, 07, registry | Registry schema |
+| D-111 | A generated tracker is first-party; the CTL layout format is an optional extension we maintain | **open** (owner) | One strong source (16); a format we would own forever | 01, 03 | Tracker build |
+| D-112 | Importer and partnership policy: exporters live upstream under their licenses; no import of GPL, LGPL, unlicensed or restrictive sources without counsel; never SoulsRandomizers | **needs-lawyer** | License rules in the notes | 03, 04 | Any import |
+| D-113 | Content primitives (`redistribute`, `fits`, `related`, `band`, `scale_by_tier`) parked until a third world; run a content-world spike | proposed | Two projects each, one ideas-only | 07 | Content worlds |
+| D-114 | Language 2 adds `trick` tests and `at_least` | proposed | Objectives (11, 10) and tricks need them; both monotone | 01, 07 | Rule vectors |
 
 ### 6.4 Roadmap items (doc 03 section 9 and doc 05 section 20)
 - **Phase 1:** rule vectors include `trick`, `tier` and `at_least`; CFill v1 vectors include stages and in-stream retries; seed code and scope in the settings string spec.
@@ -465,9 +465,9 @@ SoH (02, no top-level license), LADXR (08, MIT), ALttPR (09, MIT), VARIA (10, MI
 | Two implementations drift | Tracker and generator disagree | Shared vectors; every room's validator run is a live cross-check |
 
 ### 7.3 Open questions for the owner
-1. Should the first-party product ship a generated tracker and maintain a layout format (D-TBD-j), or leave tracking to third parties reading the room log?
-2. Context axes: accept a recipe-only v1 and a spike, or admit `x.context` early to court the Zelda N64 community (D-TBD-h)?
-3. Partnership order: OoTMM first (closest grammar, MIT), or Randovania first (13 games, but GPL and needs counsel)?
+1. Should the first-party product ship a generated tracker and maintain a layout format (D-111), or leave tracking to third parties reading the room log?
+2. Context axes: accept a recipe-only v1 and a spike, or admit `x.context` early to court the Zelda N64 community (D-109)?
+3. Partnership order: decided by the owner (D-101): OoTMM first; Randovania follows after a lawyer reviews GPL implications.
 4. Is `max` the right default for `x.cost`, or should we match VARIA's sum to ease a future VARIA partnership?
 5. Do we invest in the web studio's graph editor before Phase 2, given doc 07 section 4.6 calls its benefit an untested hypothesis?
 6. How strict is the trick documentation check: warning or publish blocker above a level?

@@ -1,13 +1,13 @@
 # 15. The settings file: one plain-language standard for player and room settings
 
-> Internal design draft, 2026-11-16. Not reviewed by a different agent or a human; under [`CLAUDE.md`](../../CLAUDE.md) nothing here leaves this repo until that review and a human sign-off. Our own writing, with citations, and no Archipelago source code, text or assets. Numbers are labeled **counted**, **estimated**, **design value** or **not verified**; nothing here was measured. Terms: [`GLOSSARY.md`](GLOSSARY.md). Decision ids (D-nn) are in [`DECISIONS.md`](DECISIONS.md); rows proposed here are `D-TBD-S1` and onward, so they do not collide with doc 14's `D-TBD-a` series.
+> Internal design draft, 2026-11-16. Reviewed by a different agent on 2026-11-16 (adversarial review on PR 1); not reviewed by a human. Under [`CLAUDE.md`](../../CLAUDE.md) nothing here leaves this repo until that review and a human sign-off. Our own writing, with citations, and no Archipelago source code, text or assets. Numbers are labeled **counted**, **estimated**, **design value** or **not verified**; nothing here was measured. Terms: [`GLOSSARY.md`](GLOSSARY.md). Decision ids (D-nn) are in [`DECISIONS.md`](DECISIONS.md); rows from this doc are D-115 to D-122 (doc 14's are D-102 to D-114).
 
 Builds on doc 07 (option kinds, strict YAML profile, canonical JSON), doc 01 D2.3 (typed options with human text), D2.4 (string keys), D3.1 (seed phrase and settings string) and D3.3 (mystery settings), doc 14 (option `scope`, presets, tricks and tiers, spoiler policy) and doc 09 (where options are chosen and locked).
 
 ## 0. Sources and their limits
 - **Facts about the existing multiworld project's common options** come from a check of its `Options.py` made on our behalf in November 2026 (the requesting agent's verification; I did not open that repository). From that check: "Progression Balancing" is a 0 to 99 slider with default 50 and named stops at 0 (disabled), 50 (normal) and 99 (extreme), and its code describes it as a way to move progression earlier so a player is less likely to be stuck early. The other common options checked are Accessibility, Local Items, Non-local Items, Start Inventory, Start Inventory from Pool, Start Hints, Start Location Hints, Exclude Locations, Priority Locations, Item Links, Plando Items, Plando Connections and Death Link. Player files express randomness as relative weights.
 - **The weight problem**: our notes record that the option template writes `option: 50` meaning a weight (`data/options.yaml:80-88`, verified in [`../notes/01-archipelago-findings.md`](../notes/01-archipelago-findings.md)).
-- The **values** of those options (for example which choices Accessibility offers) were not part of the check. Where this doc maps them, the mapping is by meaning and the value names are **not verified**.
+- The **values** of those options were not part of that check, with one exception: a second check of the same file, made on our behalf on 2026-11-16, found that Accessibility has exactly two choices, `full` (value 0, the default) and `minimal` (value 2). For every other option the mapping in this doc is by meaning and the value names are **not verified**.
 - How other randomizers name and share settings comes from the batch summaries in [`../research/randomizers/`](../research/randomizers/) (A to D). Community aliases listed in section 4 are words players use in public; they are listed so search works, not copied text.
 - The existing project's design suits people comfortable with technical setup, which is who its volunteers built it for. This doc is about a different front door for a wider audience, and every mapping in section 6 exists so files keep working in both directions.
 
@@ -29,7 +29,7 @@ Builds on doc 07 (option kinds, strict YAML profile, canonical JSON), doc 01 D2.
 - **Authoring**: YAML in the strict profile of doc 07 section 4.2 (schema-directed typing, no anchors or aliases, no duplicate keys, integers only, one document per file). The same file may be written as JSON. Because typing is schema-directed, a choice value `no` stays the word "no" and cannot silently turn into `false` (doc 07 section 4.3).
 - **Canonical**: JSON with sorted keys, NFC strings and integers only. Defaults are filled in from the preset and then the world, aliases resolved to stable keys, and `surprise` entries kept as specs (they resolve only at generation, from the seed).
 - **Settings hash**: SHA-256 of the canonical bytes. The lobby binds "options locked" to this hash (section 2.5), and two files with the same meaning always have the same hash whatever their comments, key order or spelling.
-- **Scope** (doc 14): options with `scope: cosmetic` are kept in the file but left out of the settings hash input that feeds the seed, so changing a cosmetic never changes the game. `knowledge` options (hints, spoilers) are hashed and shown to racers.
+- **Scope** (doc 14): options with `scope: cosmetic` are kept in the file but left out of the settings hash input (the hash covers the canonical bytes with cosmetic-scope options removed) and out of the seed, so changing a cosmetic never changes the game. `knowledge` options (hints, spoilers) are hashed and shown to racers.
 
 ### 2.2 Top-level structure
 
@@ -102,7 +102,7 @@ surprise:
 - The settings screen is generated from the world's options and the common vocabulary (doc 01 D2.3; batch A item 8 and batch B item 8 record that projects which drive the UI from one settings declaration avoid drift). Each option renders as its kind dictates: toggle as a switch, choice as radio buttons (a select box above 7 values, design value), range as a number field plus slider with named stops, item and place sets as a searchable multi-select, tier as an ordered radio group.
 - Groups: the screen shows **Basics** (goal, difficulty, start items), **Your game** (the world's own options), **Playing with others** (keep moving, keep home, send away), **Help and hints**, **Looks and sound** (cosmetic scope) and **Advanced** (hand placement). Common concepts always sit in the same group in every game.
 - The screen reads and writes the same canonical JSON. Download gives the YAML form with each value commented by its label in the player's language; upload runs the validator first (section 7).
-- In the lobby, `set_options` carries the canonical JSON and `lock_options` freezes it; the seat shows the settings hash prefix, and any change after lock bumps `lobby_rev` and revokes ready (doc 09 sections 5.2 and 7.1).
+- In the lobby, `set_options` carries the canonical JSON and `lock_options` freezes it and bumps `lobby_rev`; the seat shows the settings hash prefix. A change after lock needs `unlock_options`, which revokes ready (doc 09 sections 5.2, 7.1 and 8.2).
 - A game may render the same screen in-game through CSDK `settings.ui` (doc 01 D5.1); it uses the same keys and strings.
 
 ### 2.6 Presets are settings files
@@ -162,7 +162,7 @@ Every option has a small "Surprise me" control beside it. Turning it on swaps th
 | Stable key | Plain label | What it does (one sentence) | Kind | Default | Legacy name | Community aliases | Lives in |
 |---|---|---|---|---|---|---|---|
 | `keep_moving` | Keep everyone moving | Moves some of your important items earlier so you are less likely to wait a long time with nothing to do. | choice (ordered): `off`, `gentle`, `strong` | `gentle` | Progression Balancing | balancing, prog balancing | P (room may lock) |
-| `must_reach` | What must be reachable | Chooses whether every place in your game must be reachable, or only what you need to finish. | choice: `everything`, `all_items`, `just_the_goal` | `everything` | Accessibility | accessibility, full, minimal | P |
+| `must_reach` | What must be reachable | Chooses whether every place in your game must be reachable, or only what you need to finish. | choice: `everything`, `all_items`, `just_the_goal` | `everything` | Accessibility (`full`, the default, or `minimal`; verified, section 0) | accessibility, full, minimal | P |
 | `keep_home` | Keep these items in my game | These items will be found somewhere in your own game. | item_set | empty | Local Items | local items | P |
 | `send_away` | Send these items to other players | These items will be placed in other players' games. | item_set | empty | Non-local Items | non-local items | P |
 | `start_with` | Start with these items | You begin the game already holding these items. | record: `items` (item list with counts), `take_from_shuffle` (toggle) | empty, `false` | Start Inventory; Start Inventory from Pool (`take_from_shuffle: true`) | start inventory, starting items | P |
@@ -174,7 +174,7 @@ Every option has a small "Surprise me" control beside it. Turning it on swaps th
 | `hand_placed_items` | Place items by hand | You choose exactly where certain items go, and the game checks it is still finishable. | list of records: `item`, `place`, optional `player` | none | Plando Items | plando, item plando | P (own game); R (across games) |
 | `hand_connected_doors` | Connect doors by hand | You choose where certain doors or entrances lead, and the game checks it still works. | list of records: `from`, `to`, `both_ways` | none | Plando Connections | connection plando, ER plando | P |
 | `shared_deaths` | Shared deaths | When one player in the group dies, everyone else in the group does too. | choice: `off`, `on` | `off` | Death Link | deathlink, DL | R allows it; P opts in |
-| `on_finish` | When a player finishes | What happens to a finished player's remaining items: keep waiting, send them all out, or let others collect theirs. | choice per side: `send_my_items` (`never`, `when_done`, `anytime`), `get_my_items` (same values) | `when_done` both | Release and collect behavior (room-level in the existing project's hosting, **not verified** here) | release, collect, forfeit | R |
+| `on_finish` | When a player finishes | Whether a player who reaches the goal automatically sends out the items still in their game, and automatically receives their own items from other games. | choice per side: `send_my_items` (`never`, `when_done`), `get_my_items` (same values) | `when_done` both | Release and collect behavior (room-level in the existing project's hosting, **not verified** here) | release, collect, forfeit | R (a pre-authorized rule; players never trigger release or collect by hand, and the host's manual release and collect need step-up, doc 10 section 2.4) |
 | `hint_price` | Hint price | How many points a player spends to ask where an item is. | range (percent of the player's places, integer) | design value per room | Hint cost (room-level, **not verified** here) | hint cost, hint points | R |
 | `logic_level` | How hard the game can expect you to play | Sets which harder moves and routes the game may require of you. | tier (doc 14 section 3) | world default | per-world difficulty options (no common option) | logic, glitches, difficulty, tricks | G |
 | `tricks` | Special moves you know | Lets you mark individual techniques you are happy to be required to use. | map trick to `on`, `off` or a level | all off | per-world trick options | tricks, skips, glitches | G |
@@ -195,10 +195,10 @@ The legacy slider is a single number whose effect is hard to predict from the nu
 | `gentle` (default) | Usually something to do early, but surprises still happen. | A balancing pass that moves a bounded share of your progression earlier (design value, to be tuned with real games). |
 | `strong` | You will rarely wait. Your important items tend to show up early, often in your own game or in early places. | A stronger pass, plus a few early places held for you (`local_count`, doc 14 section 2.7). |
 
-Each level's exact algorithm is in the CFill spec with test vectors. We do not claim our levels reproduce the legacy slider's numbers; the mapping in section 6 is nearest-meaning only. Whether this belongs per player or per room is open question 1, because one player's setting changes where other players' items go.
+Each level's exact algorithm is in the CFill spec with test vectors. We do not claim our levels reproduce the legacy slider's numbers; the mapping in section 6 is nearest-meaning only. Decided by the owner (D-117, 2026-11-16): three named levels only, no expert number field, and the setting is per player, which the room host may lock, because one player's setting changes where other players' items go.
 
 ### 4.2 Why some legacy per-player options move to the room
-Item links, shared deaths, release and collect, hint price and spoilers affect other seats, so in our model the host decides (or allows) them and each player opts in where that makes sense. A player file that sets them is not silently obeyed: the validator says "The room host decides this" and the screen shows the room's value read-only.
+Item links, shared deaths, release and collect, hint price and spoilers affect other seats, so the host decides (or allows) them and each player opts in where section 4 says so (decided by the owner, D-119, 2026-11-16). A player file that sets them is not silently obeyed: the validator says "The room host decides this" and the screen shows the room's value read-only.
 
 ## 5. Writing rules for world authors
 
@@ -248,8 +248,8 @@ progression, balancing, accessibility (in the "reachable" sense), sphere, logic 
 
 | Legacy option | Our key | How values map | Warning shown on import |
 |---|---|---|---|
-| Progression Balancing (0 to 99, stops 0, 50, 99, verified via the check in section 0) | `keep_moving` | 0 to `off`; 1 to 74 to `gentle`; 75 to 99 to `strong` (our cut points, design value); export writes 0, 50, 99 | "Your file used a balancing number of 30. We use three levels and picked Gentle, the closest." (only when not 0, 50 or 99) |
-| Accessibility | `must_reach` | By meaning: "all locations" to `everything`, "items only" to `all_items`, "minimal" to `just_the_goal` | Shown only when a value is unrecognized |
+| Progression Balancing (0 to 99, stops 0, 50, 99, verified via the check in section 0) | `keep_moving` | 0 to `off`; 1 to 74 to `gentle`; 75 to 99 to `strong` (our cut points, a proposed estimate to tune); export writes 0, 50, 99 | "Your file used a balancing number of 30. We use three levels and picked Gentle, the closest." (only when not 0, 50 or 99) |
+| Accessibility (`full` = 0, default; `minimal` = 2; verified, section 0) | `must_reach` | Import: `full` to `everything`, `minimal` to `just_the_goal`. Export: `everything` to `full`, `just_the_goal` to `minimal`, and `all_items` (no legacy equivalent) to `full`, the stricter choice | Import: only when a value is unrecognized. Export of `all_items`: "The older generator has no 'all items' choice; we used 'full', which also keeps every item reachable." |
 | Local Items / Non-local Items | `keep_home` / `send_away` | Names resolved through the world's name table and aliases | "These names are not items in this game: ..." |
 | Start Inventory / Start Inventory from Pool | `start_with` | Counts kept; the second sets `take_from_shuffle: true` | "Both start lists were set; we merged them." when both appear |
 | Start Hints / Start Location Hints | `reveal_items` / `reveal_places` | Names resolved | Room may have reveals off: "This room does not allow starting reveals." |
@@ -263,7 +263,7 @@ progression, balancing, accessibility (in the "reachable" sense), sphere, logic 
 
 ### 6.2 What cannot be mapped
 - **Files that choose among several games by weight** (from memory, **not verified** that this form is current): we ask the player to pick one game per file.
-- **Triggers and layered override files** (our notes record a `meta.yaml` that overrides player files and triggers that add layers, inferred, notes section "Generation"): no equivalent; the importer lists them and drops them. Room-wide overrides become a host room settings file.
+- **Triggers and layered override files** (our notes record a `meta.yaml` that overrides player files and triggers that add layers, **not verified**, notes section "Generation"): no equivalent; the importer lists them and drops them. Room-wide overrides become a host room settings file.
 - **Range keywords** for random numbers: mapped to `anywhere_between` only where the meaning is clear; otherwise left at the default with a warning.
 - **Options a world in the sidecar has but no import table for**: kept verbatim in a `legacy:` block that only the sidecar reads (doc 01 section 3.8.2), shown on screen as "Settings for the older generator, not shown here".
 - **Exact balancing behavior**: our levels are not the legacy numbers (section 4.1).
@@ -289,13 +289,13 @@ Every message has an error key (doc 01 D1.7), says what is wrong in the player's
 | `settings.game_version` | "This file is for Lanternfall 0.1. The room runs 0.2, which renamed one setting; we updated it for you." |
 | `settings.surprise_off` | "This room does not allow Surprise me. Choose a value for 'Goal' and 'Traps'." |
 
-Unknown options are errors, not warnings with a silent fallback (doc 01 D2.3 records that the legacy behavior logs a warning and uses the default, from the notes, inferred line). Renamed options are migrated through world `alias` entries (doc 07 section 4.6) and the player is told.
+Unknown options are errors, not warnings with a silent fallback (doc 01 D2.3 records, from the notes, that the legacy behavior logs a warning and uses the default). Renamed options are migrated through world `alias` entries (doc 07 section 4.6) and the player is told.
 
 ### 7.2 Accessibility of the settings screen
 - **Screen readers**: every control has a programmatic label from the label string and a description from "what it does"; groups are `fieldset` with `legend`; sliders also expose their named stops as a radio group; errors are linked to their field and announced through one polite live region with a count ("2 settings need attention").
 - **Keyboard**: every control reachable in reading order; visible focus; Enter on a group heading collapses it; the search box (labels and aliases) is reachable by a shortcut shown on screen; the "Surprise me" control is a real button with a pressed state.
 - **Color and contrast**: state never by color alone (icons and text for "from preset", "changed", "surprise", "error"); contrast to WCAG 2.2 AA (from memory, **not verified** which success criteria apply to each control; check the spec before build).
-- **Motion and size**: no animation needed to understand state; reduced-motion respected; touch targets sized for phones (doc 09 section 4.1 assumes phone joins).
+- **Motion and size**: no animation needed to understand state; reduced-motion respected; touch targets sized for phones (doc 09 section 3.8.3 covers phone joins).
 - **Language**: the screen sets the page language per string bundle, so a screen reader pronounces translated labels correctly.
 - **Testing**: automated checks in CI plus a manual pass with at least one screen reader on desktop and one on a phone before the first public release (design value).
 
@@ -307,24 +307,24 @@ Unknown options are errors, not warnings with a silent fallback (doc 01 D2.3 rec
 - **Doc 01 D3.3**: mystery settings use `surprise`; the room flag `allow_surprise`.
 - **Doc 07 section 3.1 and 4.2**: world `options` gain `what`, `why`, `example`, `aliases` string keys and the lint rules of section 5.2; the strict YAML profile applies to settings files too; `presets/` folder in the package layout.
 - **Doc 09**: `set_options` carries canonical settings JSON; `lock_options` records the settings hash per seat; the host console has a room settings page owning the room-level keys of section 4; a seat card shows "surprise options" without results under mystery rooms.
-- **GLOSSARY**: add settings file, room settings file, common vocabulary, surprise (and `one_of`, `chances`, `anywhere_between`), keep everyone moving, preset, settings hash, decided by (player, room, game).
+- **GLOSSARY**: settings file, room settings file, common vocabulary, surprise block (`one_of`, `chances`, `anywhere_between`), keep everyone moving (`keep_moving`), preset, settings hash and option scope are now in GLOSSARY section H; "decided by" (player, room, game) is still to add.
 
-### 8.2 New decision rows (ids TBD)
+### 8.2 New decision rows (D-115 to D-122)
 
 | Id | Decision | Status | Rationale | Docs affected | Blocks |
 |---|---|---|---|---|---|
-| D-TBD-S1 | One settings file format (`settings/1`) for players and `room-settings/1` for hosts, strict YAML authoring, canonical JSON with a settings hash | proposed | One parser, one hash, same rules as worlds (doc 07) | 01, 07, 09 | Settings screen build |
-| D-TBD-S2 | A common vocabulary of reserved keys with platform-owned labels and help (section 4) | proposed | Same words in every game | 01, GLOSSARY | World authoring guide |
-| D-TBD-S3 | "Keep everyone moving" with three named levels replaces the 0 to 99 slider in our UI; nearest-level import | **open** (owner) | Predictable for players; loses fine control | 01 D2.7, CFill | CFill balancing vectors |
-| D-TBD-S4 | `surprise` with `one_of`, `chances` (sum 100), `anywhere_between` replaces bare weights | proposed | The numbers are the odds | 01 D2.3, D3.3 | Settings string spec |
-| D-TBD-S5 | Item links, shared deaths, release and collect, hint price and spoilers are room-level; players opt in | **open** (owner) | They affect other seats | 09, 01 | Lobby build |
-| D-TBD-S6 | Plain-language lint rules and the jargon list are publish gates (errors block, warnings show) | proposed | Quality at the source | 07, registry | Registry publish |
-| D-TBD-S7 | Unknown options and room-level keys in a player file are errors with plain messages, never a silent default | proposed | A typo must not change a game silently | 01 D2.3 | Validator |
-| D-TBD-S8 | Legacy import and export tables per world, with a `legacy:` passthrough block for sidecar worlds | proposed | Files keep working in both directions | 01 section 3.8 | Compat milestone after D-100 |
+| D-115 | One settings file format (`settings/1`) for players and `room-settings/1` for hosts, strict YAML authoring, canonical JSON with a settings hash | proposed | One parser, one hash, same rules as worlds (doc 07) | 01, 07, 09 | Settings screen build |
+| D-116 | A common vocabulary of reserved keys with platform-owned labels and help (section 4) | proposed | Same words in every game | 01, GLOSSARY | World authoring guide |
+| D-117 | "Keep everyone moving" with three named levels (`off`, `gentle`, `strong`) replaces the 0 to 99 slider in our UI, with no expert number field; a per-player setting the host may lock; nearest-level import (cut points are a proposed estimate to tune) | **decided** (owner, 2026-11-16) | Predictable for players; loses fine control | 01 D2.7, CFill | CFill balancing vectors |
+| D-118 | `surprise` with `one_of`, `chances` (sum 100), `anywhere_between` replaces bare weights | proposed | The numbers are the odds | 01 D2.3, D3.3 | Settings string spec |
+| D-119 | Item links, shared deaths, release and collect, hint price and spoilers are room settings set by the host; players opt in where section 4 says so | **decided** (owner, 2026-11-16) | They affect other seats | 09, 01 | Lobby build |
+| D-120 | Plain-language lint rules and the jargon list are publish gates (errors block, warnings show) | proposed | Quality at the source | 07, registry | Registry publish |
+| D-121 | Unknown options and room-level keys in a player file are errors with plain messages, never a silent default | proposed | A typo must not change a game silently | 01 D2.3 | Validator |
+| D-122 | Legacy import and export tables per world, with a `legacy:` passthrough block for sidecar worlds | proposed | Files keep working in both directions | 01 section 3.8 | Compat milestone |
 
 ### 8.3 Open questions for the owner (recommended default in brackets)
-1. Is "Keep everyone moving" a player or room setting? [player preference, room may lock it, because a host running a race may want one value for all]
-2. Three levels or keep a numeric "advanced" field for experts? [three levels only; the import warning covers the rest]
+1. Decided (D-117): "Keep everyone moving" is a player setting the room may lock, because a host running a race may want one value for all.
+2. Decided (D-117): three levels only, no numeric expert field; the import warning covers the rest.
 3. Label length limits per language: fixed scale factors or per-language limits set by translators? [per language, by translators]
 4. Which readability estimate, and does it block or only warn? [warn only; no formula is reliable across languages]
 5. Separate skill presets ("what I can do") combined with a normal preset? [yes, one of each at most]
@@ -335,7 +335,7 @@ Unknown options are errors, not warnings with a silent fallback (doc 01 D2.3 rec
 | Risk | Why it matters | Mitigation |
 |---|---|---|
 | Experienced players dislike new names | They know the old terms well and search by them | Aliases in search and under labels; legacy import keeps their files working |
-| Three balancing levels hide a real difference players relied on | Some groups tune the number carefully (not verified how many) | Import warning names the change; owner question 2 |
+| Three balancing levels hide a real difference players relied on | Some groups tune the number carefully (not verified how many) | Import warning names the change; revisit D-117 if players ask for finer control |
 | Plain labels drift from what the generator does | A friendly label that is wrong is worse than jargon | Platform owns common strings; each level's text is reviewed against its CFill vector |
 | Moving options to the room breaks expectations | A player file that used to work now gets "the host decides" | Clear message, value forwarded to the host as a suggestion |
 | Reserved keys collide with future world needs | A world wants its own `traps` meaning | `settings.duplicate_concept` lint and CRFC for new common keys |
