@@ -12,7 +12,7 @@ Research notes, not legal advice. Take this to an IP and software lawyer before 
 ## Reusing code (MIT)
 Allowed: copy, modify, sell, sublicense. Condition: keep the copyright and permission notice in copies and substantial portions. A port to another language that follows their code closely is a derived work, so keep the notice. Per our reading of MIT, no permission is needed from authors.
 
-For now the plan is to copy nothing. If we later run their games unmodified in a sidecar, keep their notices with the code.
+For now this repo includes none of their code or text. If we later reuse code or run their games unmodified in a sidecar, keep their notices with the code.
 
 ## Protocol compatibility
 Implementing a documented protocol so existing clients can connect is generally lawful. Not verified by a lawyer.

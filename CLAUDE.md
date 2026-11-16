@@ -43,4 +43,5 @@ Archipelago is a volunteer-built open-source project, and its community is where
 
 - This is research, not legal advice. Anything about publishers, trademarks, or licensing in external text needs a lawyer's review first.
 - Do not copy anything from the Archipelago repo into this one. Notes cite file paths in their repo, they do not reproduce its contents.
+- Never claim "clean room", "nothing copied" or "not copied from Archipelago" in external text. Our agents read their public code for research, so we cannot make a clean-room claim. Say what the repo contains instead: "our own writing, with citations, and no Archipelago source code, text or assets."
 - No em dashes in text we write.
