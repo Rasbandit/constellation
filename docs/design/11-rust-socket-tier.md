@@ -250,7 +250,7 @@ Not a spike; a CI gate on the library choice, run before `edge-native` is commit
 - **Autobahn** (the standard WebSocket conformance suite) server run at our pinned `yawc` commit, with the `zlib` feature and with the default miniz_oxide backend. Archive `index.json`. Pass: every case OK, NON-STRICT or INFORMATIONAL (their CI rule), none excluded. Their CI runs this but publishes no report, so we run our own.
 - **Real clients** against our edge, asserting the negotiated `Sec-WebSocket-Extensions` header: Python `websockets` (what Archipelago's own server and many tools use), a browser, a `soketto` client (the Archipela-Go app), and a current Archipelago client. Include a repeated or split extension offer (fixed on yawc `master`, unreleased in 0.5.0). Pass: the server's "does not support compressed" warning never appears for compressing clients.
 - **Abuse:** a compression-bomb frame against the read limit (yawc issue 55, fixed 2026-10-21); slow readers against the backpressure boundary; unbounded outgoing compression buffers (open issue 57).
-- **Supply chain:** pin a git commit or 0.5.1 or later (not crates.io 0.5.0), vendor it, `cargo-deny` and fuzz targets (the repo has `fuzz/`), and the licence call in doc 05 section 21 (MPL-2.0).
+- **Supply chain:** pin a git commit or 0.5.1 or later (not crates.io 0.5.0), vendor it, `cargo-deny` and fuzz targets (the repo has `fuzz/`), and a recorded MPL-2.0 exception (owner accepted, no lawyer review).
 - **Fail:** switch to `soketto` (same gate, plus its browser corrupt-stream report, soketto issue 49), or ship without compression and accept the warning, whichever the owner picks.
 
 ### 4.8 Gate G-DB: log writer and Postgres layer (D-98)
