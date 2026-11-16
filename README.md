@@ -29,6 +29,7 @@ Internal drafts in [`docs/design/`](docs/design/), all proposed and not final. S
 - [`12-start-small-ladder.md`](docs/design/12-start-small-ladder.md): the Stage 0 to Stage 3 start-small ladder below rung 1.
 - [`13-cost-model.md`](docs/design/13-cost-model.md): the single source for cost; at 100,000 games a day the estimated range is about $830 to $3,452 a month depending on scenario [E].
 - [`14-randomizer-patterns.md`](docs/design/14-randomizer-patterns.md): patterns from 16 popular randomizers and how we centralize them; research notes in [`docs/research/randomizers/`](docs/research/randomizers/00-landscape.md).
+- [`15-settings-file.md`](docs/design/15-settings-file.md): the standard player settings file with plain-language names for every common option.
 - [`GLOSSARY.md`](docs/design/GLOSSARY.md): the terms used across the docs.
 - [`DECISIONS.md`](docs/design/DECISIONS.md): the decision log, including what is still open.
 
