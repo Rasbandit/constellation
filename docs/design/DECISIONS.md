@@ -101,7 +101,7 @@ All keep their recommended default from the old register, but none is decided. S
 
 Register items D7, D8, D9, D10, D11, D13, D16, D18, D21, D29 are covered by D-03, D-02, D-04, D-04/D-05 (generation pool stays separate), D-07, D-06, D-27, D-23, D-08, D-05.
 
-## Part D. Decisions added during the doc merge (D-60 to D-72, D-79 to D-96)
+## Part D. Decisions added during the doc merge (D-60 to D-72, D-79 to D-97)
 
 Each row says where the rule is owned. "proposed" rows were picked by the cleanup plan where two docs disagreed; "open" rows need the owner.
 
@@ -138,3 +138,4 @@ Each row says where the rule is owned. "proposed" rows were picked by the cleanu
 | D-94 | **Scenario B redundancy: hot standby.** Whether production-lite carries a hot standby box (about $1,177 a month at 100,000 games a day [E]) or runs without one (about $810 [E], doc 13 section 8). | **open** (owner) | Sets the redundancy cost the plan quotes; interacts with D-81 and D-65. | 13, 12, 06 | Stage 2 |
 | D-95 | **Scenario C fixed-cost placeholder.** The $200 a month fixed line for C is a guess [A]; owner to confirm or replace (doc 13 section 2). | **open** (owner) | C totals move one-for-one with it. | 13 | Cost sign-off |
 | D-96 | **Scenario E fixed-cost placeholder.** The $2,000 a month fixed line for E is a guess [A]; owner to confirm or replace (doc 13 section 2). | **open** (owner) | E totals move one-for-one with it. | 13 | Cost sign-off |
+| D-97 | **WebSocket library: `yawc` behind gate G-WS, `soketto` as fallback; `axum` for REST and SSE only.** The edge must support permessage-deflate (RFC 7692) because Archipelago's protocol calls uncompressed connections deprecated and its server warns every client without it. | **open** (owner, plus lawyer for the licence) | tungstenite, tokio-tungstenite (and so axum's WebSocket), fastwebsockets and tokio-websockets have no deflate (READMEs, 2026-11-16). yawc has server deflate and runs Autobahn in CI but publishes no results, has one main author, about 59 `unsafe` sites, an MPL-2.0 licence, and fixes on `master` not yet released. soketto has deflate, is `forbid(unsafe_code)` and permissive, but is low-activity with a reported browser corrupt-stream bug. Compression adds memory per connection (doc 11 section 2.1). | 05, 11 | Rung 1 build, gate G-WS |

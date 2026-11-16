@@ -73,6 +73,7 @@ Write these into doc 05 section 17 (we do not edit it here). Each has an enforce
 - **Finding [M, note 04 Q1, lesismal README].** As shipped, tokio-tungstenite keeps a 128 KiB read buffer and zero-fills the part each read uses, and a write buffer that gathers frames up to 128 KiB. At 50,000 connections, echo test: 6.85 GB at defaults versus 403 MB tuned; pipeline test: 8.9 GB versus 723 MB average (900 MB peak). Throughput rose from 315k to 454k echo TPS with the tuning. Setup [C]: Docker, 3 CPUs for the server, 1 KiB payload, three runs averaged; the tuned build is the benchmark author's own, under echo load, not idle.
 - **Derived [E]:** 403 MB / 50,000 = about 8 KB per connection tuned; 6.85 GB / 50,000 = about 137 KB at defaults. By our arithmetic that is about 17x for the echo test [E: 6.85 GB / 403 MB] and about 12x for the pipeline test [E: 8.9 GB / 723 MB]. The source README's own "30x" wording is not reproduced by these figures, so treat the gap as an order-of-magnitude warning (about 12x to 17x here), not a constant.
 - **Consequence for us [E]:** at 75,000 connections the default 128 KiB read buffer alone is 75,000 x 128 KiB = about 9.6 GB; at 4 KiB it is about 300 MB.
+- **Compression adds per-connection state [V, yawc issue 60, a user report]:** about 374 KiB idle per connection with permessage-deflate and per-connection compressors, about 11 KiB with yawc's `DeflatePool` (0.5.0). Against the 32 KB budget (T1) this decides the settings: pooled compressors, `server_no_context_takeover`, and small windows (11 bits needs yawc's `zlib` feature). Measured in S1 variant (e) and gate G-WS (section 4.7).
 - **Rule.** Read buffer 4 KiB; write buffer small and shrinkable or pooled; max frame and max message sizes set explicitly (doc 09: 64 KiB frame cap, 4 KiB first frame). Never rely on crate defaults.
 - **TLS terminator choice moves memory more than the crate.** One author reports about 127 KB per connection for a TLS terminator at defaults versus about 4.9 KB added by in-process rustls [V, note 04 Q1]. Where TLS terminates is a design choice pinned by spike S1 variant (d).
 - **Enforcement.** A unit test asserting the configured values; a CI-only test that opens 10,000 loopback connections and asserts `(RSS_N - RSS_0) / N` under budget (R9).
@@ -179,7 +180,7 @@ Purpose: replace [A] and [E] values with measured ones and test the specific haz
 ### 4.2 S1: 100k idle WebSocket connections on one box
 
 - **Build:** a Rust gateway plus room runtime with a stub room, TLS in process (rustls), axum WebSocket, 30 s ping on a shared timer wheel.
-- **Variants:** (a) library defaults; (b) tuned buffers (R1); (c) `fastwebsockets` tuned, if it integrates (doc 05 section 5); (d) TLS terminated by a separate proxy.
+- **Variants:** (a) library defaults; (b) tuned buffers (R1); (c) `yawc` tuned, with the same buffer rules as (b) (D-97); (d) TLS terminated by a separate proxy; (e) variant (c) with permessage-deflate on, pooled compressors and `server_no_context_takeover`, to price compression. `fastwebsockets` is out: it has no deflate (its README, 2026-11-16).
 - **Measure:** `(RSS_N - RSS_0) / N` at N = 10k, 50k, 100k, 150k; `smaps_rollup`; kernel memory per socket; idle CPU; ping round trip p50 and p99; counting-allocator totals; the default-versus-tuned ratio on our crate versions.
 - **Pass (T1):** tuned at 100k at or below 32 KB per connection including TLS, idle CPU under 10 percent of one core per 100k [A]. **Soft miss:** 32 to 48 KB (update the doc 02 budget; 150k x 48 KB = 7.2 GB [E], still fits). **Failure:** above 48 KB tuned after one tuning pass.
 - **Engineering response on failure:** move TLS termination out of process, shrink per-session state, pool buffers, switch crate or buffer strategy; re-run.
@@ -241,6 +242,16 @@ flowchart TD
 ```
 
 ---
+
+### 4.7 Gate G-WS: WebSocket library conformance (D-97)
+
+Not a spike; a CI gate on the library choice, run before `edge-native` is committed to `yawc`. Source for the choice: a read of the crates' own source, READMEs and CI on 2026-11-16 (agent review, doc 05 section 5 row).
+
+- **Autobahn** (the standard WebSocket conformance suite) server run at our pinned `yawc` commit, with the `zlib` feature and with the default miniz_oxide backend. Archive `index.json`. Pass: every case OK, NON-STRICT or INFORMATIONAL (their CI rule), none excluded. Their CI runs this but publishes no report, so we run our own.
+- **Real clients** against our edge, asserting the negotiated `Sec-WebSocket-Extensions` header: Python `websockets` (what Archipelago's own server and many tools use), a browser, a `soketto` client (the Archipela-Go app), and a current Archipelago client. Include a repeated or split extension offer (fixed on yawc `master`, unreleased in 0.5.0). Pass: the server's "does not support compressed" warning never appears for compressing clients.
+- **Abuse:** a compression-bomb frame against the read limit (yawc issue 55, fixed 2026-10-21); slow readers against the backpressure boundary; unbounded outgoing compression buffers (open issue 57).
+- **Supply chain:** pin a git commit or 0.5.1 or later (not crates.io 0.5.0), vendor it, `cargo-deny` and fuzz targets (the repo has `fuzz/`), and the licence call in doc 05 section 21 (MPL-2.0).
+- **Fail:** switch to `soketto` (same gate, plus its browser corrupt-stream report, soketto issue 49), or ship without compression and accept the warning, whichever the owner picks.
 
 ## 5. Risks and unknowns
 
