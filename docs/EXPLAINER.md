@@ -48,7 +48,7 @@ A much easier way to play the same kind of game, with the same games, for the sa
 - Ship updates on your own schedule.
 
 **What stays the same**
-We are not trying to replace the community. Existing Archipelago games will work on day one, and their existing programs can connect. We want to be the easy front door to what they built.
+We are not trying to replace anyone. Existing Archipelago games will work on day one, and their existing programs can connect. We want to be the easy front door to what they built.
 
 ## How will it make money?
 
@@ -65,7 +65,7 @@ We will never host or sell game files. Players always use their own copy.
 ## What could go wrong?
 
 - **The companies that own the games.** Free fan projects have mostly been left alone. A business could draw attention. We keep the paid side to services and official studio deals, and we will get a lawyer's advice before launch.
-- **Upsetting the community.** If we look like a hostile takeover, the people who make the games walk away. So we stay compatible, give credit, and share what we build openly.
+- **Upsetting the community.** If we look like we are taking over, the people who make the games walk away. So we stay compatible, give credit, and share what we build openly.
 - **No games means no players.** Running all existing games from day one is how we avoid it.
 - **Cost.** Building each game for a group takes real computing power. We need to measure it and price accordingly.
 

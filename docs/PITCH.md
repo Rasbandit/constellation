@@ -16,7 +16,7 @@ We run it for players, and we sell studios an official integration so new games 
 
 ## 2. The issue
 
-Today one open-source project, Archipelago, owns this space. It works. Roughly 80 games are supported, and the shuffling logic is solid. But it was built by hobbyists for technical hobbyists, and everything around the core is hard.
+Today one open-source project, Archipelago, owns this space. It works. Roughly 80 games are supported, and the shuffling logic is solid. It was built by volunteers, mostly for people comfortable with technical setup, so the experience around that core is hard for newcomers.
 
 ### What a player goes through
 
@@ -70,7 +70,7 @@ No config files. No ports. No patch files to move around. No setup guide longer 
 
 ### What stays compatible
 
-We run existing Archipelago games on day one through a compatibility layer, and existing Archipelago game clients can connect to a Constellation room. We are a superset, not a hostile fork. The community that made those games is the reason the space exists.
+We run existing Archipelago games on day one through a compatibility layer, and existing Archipelago game clients can connect to a Constellation room. We are a compatible front door to what the community built, not a replacement for it. That community is the reason the space exists.
 
 ---
 
@@ -98,7 +98,7 @@ Design target, not yet proven: tens of thousands of open connections on one well
 
 - **Proven demand.** A volunteer project has built about 80 supported games and thousands of commits. People clearly want this. **[TBD: player and room counts. We have no verified numbers yet.]**
 - **A clear gap.** The shuffling is solved. The experience is not.
-- **A second market the incumbent cannot serve.** Studios that want to ship a randomizer or multiworld mode in a new game have no polished, supported, official option today.
+- **A second market that is not yet served.** Studios that want to ship a randomizer or multiworld mode in a new game have no polished, supported, official option today.
 - **A format shift.** The most promising existing games already store their world as data (one sampled game is about 85% data). A new, simple format is realistic.
 
 ---
@@ -163,7 +163,7 @@ Prices, margins and projections: **[TBD, needs customer interviews and a cost mo
 | Risk | Why it matters | Plan |
 |------|----------------|------|
 | **Publisher IP** (the big one) | Fan randomizers survive because they are free hobby projects that distribute no game files. Charging money raises the stakes. | Never host or distribute game files. Patch on the player's own machine. Make official studio deals the paid business. Get a lawyer before launch. |
-| **Community backlash** | Looking like a hostile fork loses the people who build the games. | Stay compatible, credit openly, contribute back, release the protocol and SDK openly. |
+| **Community backlash** | Looking like a takeover would lose the people who build the games. | Stay compatible, credit openly, contribute back, release the protocol and SDK openly. |
 | **Chicken and egg** | No games means no players. | Run all existing games on day one through the compatibility layer. |
 | **One-machine risk** | A small fast server is a single point of failure. | Hot standby, replicated backups, tested restore, from the first paying user. |
 | **Abuse** | Free hosting attracts spam, and uploaded game plugins are code that runs on our servers. | Quotas, rate limits, name moderation, and sandboxing everything uploaded. |
