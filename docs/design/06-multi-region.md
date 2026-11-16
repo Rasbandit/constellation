@@ -17,7 +17,7 @@ Not opened (everything about them is [?]): Spanner, FoundationDB, TiKV, Matrix s
 
 Facts about Archipelago come only from `docs/notes/01-archipelago-findings.md` (snapshot 2026-11, commit `4f9545f7`). We are compatible with their protocol and treat their design as a sound base built by volunteers for a different context.
 
-Scale rungs are doc 02's: rung 1 = 100k games/day, rung 2 = 1M, rung 3 = 10M+ (doc 02 sections 5.0 and 8).
+Scale rungs are doc 02's: rung 1 = 100k games/day, rung 2 = 1M, rung 3 = 10M+ (doc 02 sections 5.0 and 8). Stage 0 to Stage 3 (doc 12) come before rung 1 and defer parts of this doc; see section 11.
 
 ---
 
@@ -463,6 +463,8 @@ Machine costs are doc 02's [A] unit figures; none were re-derived from a price p
 
 Rules the code obeys from the first commit so multi-region is a deployment change, not a rewrite. Each says what it prevents.
 
+At Stage 0 and Stage 1 (doc 12 section 4.5) there is one box and one region: invariants 13 (lease gating, stubbed with a local authority) and 15 (residency scan, partial) are deferred to Stage 2, and the other 16 are kept. The second region, witness and warm standby start at Stage 2 or later (D-79, D-65).
+
 | # | Invariant | Prevents |
 |---|---|---|
 | 1 | **Internal IDs (room id, account, slot, event, job) are 64-bit random plus an origin-region tag; the tag means "created in", never "lives in", and is never used to decide the current home.** The public room key carries no region (D-12). | ID collisions if regions exchange data; a rewrite of every ID if two regions allocate independently; code that assumes tag equals home and breaks at the first move. |
@@ -488,7 +490,7 @@ Rules the code obeys from the first commit so multi-region is a deployment chang
 
 ## 12. Staged plan
 
-Builds on doc 02 section 8; rung numbers are the same.
+Builds on doc 02 section 8; rung numbers are the same. Stage 0 to Stage 3 (doc 12) precede rung 1; the witness arrives at Stage 2 and the full Authority at rung 1.
 
 ### Rung 0 (foundation) additions
 

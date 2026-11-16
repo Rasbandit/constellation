@@ -125,7 +125,7 @@ flowchart TB
 | `gen-worker` | gen-worker, gen-native, sandbox | Separate burstable pool (doc 02 open question 1) | job spec from Postgres queue | none (result to object store) |
 | `legacy-gen` | Python image | Inside a gen-worker sandbox lane (section 10) | stdin and stdout, schema-checked | none |
 
-The first process split is the edge (doc 02 section 3.3). It costs nothing in code: edge and room already talk through the `RoomLink` trait (section 7), and the in-process implementation is a channel.
+The first process split is the edge (doc 02 section 3.3). Qualifier (D-78, open): doc 11 recommends the edge process and the room runtime process as two OS processes from rung 1, joined by a local connection speaking the same mux protocol; see doc 11 sections 3.2 and 4.1. It costs nothing in code: edge and room already talk through the `RoomLink` trait (section 7), and the in-process implementation is a channel.
 
 ---
 

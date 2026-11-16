@@ -78,7 +78,7 @@ We will never host or sell game files. Players always use their own copy.
 
 ## What happens first?
 
-The smallest proof: a new server where an existing Archipelago program connects using a simple link instead of a port number. If that works, everything else is built on it.
+The smallest proof: a new server where an existing Archipelago program connects using a simple link instead of a port number. If that works, everything else is built on it. We also start small: one inexpensive server, growing in stages as more people play.
 
 ## Still to figure out
 

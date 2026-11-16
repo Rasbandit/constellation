@@ -166,7 +166,7 @@ Prices, margins and projections: **[TBD, needs customer interviews and a cost mo
 3. **Generation as a service.** Sandboxed worker queue running existing games, with result caching and readable seeds.
 4. **The new standard.** Declarative game format, SDK, registry, test harness. *Milestone: one real game ported to the new format, with its settings chosen on the web or in a game that embeds the SDK.*
 5. **Studio pilot.** One studio ships a game with the SDK built in during development.
-6. **Scale and monetize.** Paid rooms, notifications, creator tools.
+6. **Scale and monetize.** Paid rooms, notifications, creator tools. We start small, on one inexpensive server (about $23 a month at first, about $93 once the public beta opens, estimates in doc 12), and grow in stages as use grows.
 
 ---
 
@@ -177,7 +177,7 @@ Prices, margins and projections: **[TBD, needs customer interviews and a cost mo
 | **Publisher IP** (the big one) | Our reading (inferred, not legal advice): fan randomizers have mostly avoided trouble by being free and distributing no game files. Charging money may raise the stakes. | Never host or distribute game files. If a game needs a patch, a third-party tool applies it on the player's own machine; we ship none. Make studio deals the paid business. Get a lawyer before launch. |
 | **Community backlash** | Looking like we compete with the community would lose the people who build the games. | Stay compatible, credit openly, contribute back, release the protocol and SDK openly. |
 | **Chicken and egg** | No games means no players. | Run all existing games on day one through the compatibility layer (vetted worlds first, D-04). |
-| **One-machine risk** | A small fast server is a single point of failure. | Warm standby in a second region, replicated backups, tested restore, from the first paying user (doc 06). |
+| **One-machine risk** | A small fast server is a single point of failure. | We start on one inexpensive server with offsite backups and a tested restore, and say plainly that the last minute or two can be lost if the whole machine dies (doc 12). Warm standby in a second region from the first paid rooms (doc 06). |
 | **Abuse** | Free hosting attracts spam, and uploaded game plugins are code that runs on our servers. | Quotas, rate limits, name moderation, and sandboxing everything uploaded. |
 | **Generation cost** | Old Python generation is heavy. | Cache by input, autoscale workers, and move to the native format over time. |
 | **Console reality** | A stock console cannot run a randomizer at all. | Third-party bridges for modded consoles and emulators, built to the open standard, with a pairing code entered on a web page. Browser-side patching is a possible later feature, not committed. Studio games can integrate directly. |

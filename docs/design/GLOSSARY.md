@@ -98,7 +98,9 @@ Internal draft, 2026-11-16, proposed and not final. One line per term, with the 
 | rung | A capacity step (0 foundation, 1 to 3 by games per day) | 02 section 8 |
 | phase | A product roadmap period with kill criteria | 03 section 9 |
 | load-test gate | Gate 0 to 3: a measured test a rung must pass | 02 section 8 |
-| launch gate S1 to S4 | Security gates by users and games (D-05) | 04 section 11.0 |
+| gate S1 to S4 (launch gate) | Doc 04's security gates by users and games (D-05). Always written "gate S1" to "gate S4"; not the Stage 0 to 3 ladder, not doc 11's spikes | 04 section 11.0 |
+| Stage 0 to 3 | The start-small ladder below rung 1: one rented machine first, then a standby, then a generation host (D-79). Always written "Stage 0" to "Stage 3"; its own gates are G-ST0 to G-ST3. Doc 02's rungs begin where Stage 3 ends | 12 section 1 |
+| spike S1 to S5 | Doc 11's socket-tier tests (100k idle sockets, reconnect storm, slow-handler isolation, 24 h soak, optional Elixir prototype). Always written "spike S1"; not a launch gate | 11 section 5 |
 | kill criterion | A stated condition that ends or reshapes a phase | 03 section 9 |
 | home region, partner region | Where a room lives, and its async replica | 06 section 2 |
 | Authority | The global lease store | 06 section 8 |

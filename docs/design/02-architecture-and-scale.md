@@ -12,7 +12,7 @@ Sources opened for this document:
 
 Facts about Archipelago come only from `docs/notes/01-archipelago-findings.md` (snapshot 2026-11, commit `4f9545f7`). We treat their design as a sound base built by volunteers for a different context, and we stay compatible with it.
 
-Scale rungs (capacity, not roadmap phases): rung 1 = 100k games/day, rung 2 = 1M games/day, rung 3 = 10M+ games/day. Gates are in section 8; multi-region additions are in doc 06 section 12.
+Scale rungs (capacity, not roadmap phases): rung 1 = 100k games/day, rung 2 = 1M games/day, rung 3 = 10M+ games/day. Gates are in section 8; multi-region additions are in doc 06 section 12. Below rung 1 is the start-small ladder, Stage 0 to Stage 3 (doc 12); see section 8, "Below rung 1".
 
 ---
 
@@ -62,7 +62,7 @@ Wire form is owned by doc 01 D1.4; this section fixes the semantics.
 - **Rejected.** Consistent hashing alone; gossip membership with no central truth (more moving parts, same need for fencing).
 
 ### D6. Connections terminate at the edge, not in the room runtime
-- **Choice.** Edge nodes (native edge, compat edge) hold sockets and sessions; room nodes hold none. Edge-to-room traffic runs over a few long-lived multiplexed streams per node pair. A room move re-points a session inside the edge; the player's socket never drops. Day one: edge and room share a process (role `all`); the edge is the first split (section 3.3).
+- **Choice.** Edge nodes (native edge, compat edge) hold sockets and sessions; room nodes hold none. Edge-to-room traffic runs over a few long-lived multiplexed streams per node pair. A room move re-points a session inside the edge; the player's socket never drops. Day one: edge and room share a process (role `all`); the edge is the first split (section 3.3). Doc 11 (D-78, open) recommends running them as two OS processes from rung 1, an edge process and a room runtime process joined by a local connection, so a room fault does not drop sockets; details in doc 11 sections 3.2 and 4.1.
 - **Why.** Moves and deploys do not kick players, and sockets scale on cheap memory-heavy nodes while rooms scale on CPU-heavy ones. Phoenix gained by sharding fan-out and replacing a per-connection heartbeat timer [M: Phoenix post].
 - **Rejected.** Sockets inside the room actor: every move or deploy disconnects players, and the existing client's reconnect delay doubles with no cap [C: notes/01].
 
@@ -77,7 +77,7 @@ Wire form is owned by doc 01 D1.4; this section fixes the semantics.
 - **Native path.** Declarative worlds run in `gen-native`, always in the generation fleet (D-15). World modules (WASM) are reserved and disabled (D-10); if enabled, they run inside the microVM or on a vetted gVisor host, so two layers apply. `gen-legacy` shrinks as ports land (section 5.7).
 
 ### D9. One writer per room, region chosen at creation and movable (doc 06), async cross-region replica
-- **Choice.** A room lives in one home region. Its log is synchronously replicated across two availability zones (RPO 0 for acked events) and asynchronously to a partner region (RPO seconds [E], RTO minutes [E]). Doc 06 owns placement, moves (cold at wake, explicit hot move), leases, failover and the per-room durability class (`local_sync` default, `sync_partner` for tournament and reserved pools).
+- **Choice.** A room lives in one home region. Its log is synchronously replicated across two availability zones (RPO 0 for acked events) and asynchronously to a partner region (RPO seconds [E], RTO minutes [E]). Qualifier: at Stage 0 and Stage 1 (one box) RPO 0 and the standby are waived and acked events from the last 1 to 2 minutes can be lost on total box loss (doc 12 section 1.1, D-81). Doc 06 owns placement, moves (cold at wake, explicit hot move), leases, failover and the per-room durability class (`local_sync` default, `sync_partner` for tournament and reserved pools).
 - **Why.** Games are slow, so a 150-300 ms [A] round trip to the owning region is invisible. Single-writer avoids CRDT and consensus complexity. Cloudflare places an object near its first requester and accepts a location hint [M: Cloudflare docs]; we use the host's geo-IP and an option to pin EU.
 - **Rejected.** Active-active rooms (conflict rules for item grants are not worth it); one global region (EU residency, race-countdown latency).
 
@@ -153,7 +153,7 @@ Rules: `room-core` and `proto` have zero IO dependencies. `edge-compat` is the o
 
 ### 3.3 Monolith on day one, and when each piece splits
 
-Day one: one `constellation` binary with roles `all`, one Postgres (primary plus sync standby in a second zone), one object store, one separate `gen-worker` pool. Two serving boxes (primary and an in-region standby running the same binary read-only until promoted). Per D-65 (open) rung 1 also carries a warm standby in a second region with a witness and a manual promotion drill (doc 06 section 12; about +$470 per month, doc 06 section 10.2, not included in the $3,452 of section 5.10). Generation hosts need no KVM on day one (D-04).
+Day one at rung 1 (Stage 0 to Stage 3 come first and use one box with no standby at Stage 0 and Stage 1, doc 12): one `constellation` binary with roles `all`, one Postgres (primary plus sync standby in a second zone), one object store, one separate `gen-worker` pool. Two serving boxes (primary and an in-region standby running the same binary read-only until promoted). Per D-65 (open) rung 1 also carries a warm standby in a second region with a witness and a manual promotion drill (doc 06 section 12; about +$470 per month, doc 06 section 10.2, not included in the $3,452 of section 5.10). Generation hosts need no KVM on day one (D-04).
 
 | Split | Trigger (any one) | Why that trigger |
 |---|---|---|
@@ -464,6 +464,10 @@ From memory, not verified [?]: Akka cluster sharding (shard coordinator, split-b
 ---
 
 ## 8. Staged plan with load-test gates
+
+### Below rung 1
+
+Rung 1 is the destination. Stage 0 to Stage 3 (doc 12) are the on-ramp: one rented machine at first, growing in stages, with their own gates (G-ST0 to G-ST3) and costs, which doc 12 owns. Doc 02's rungs begin where Stage 3 ends. Rung 0 (foundation, below) is the build phase and is not renumbered. Stage 0 to Stage 3 are not doc 04's launch gates S1 to S4 (GLOSSARY).
 
 Rules: no rung is promoted until its gate passes on a staging copy of the production topology, with results recorded as measured values. A failed gate stays on the same rung until fixed. Multi-region gate additions: doc 06 section 12.
 
