@@ -1,6 +1,6 @@
 # 11. Rust socket and room tier: decision, shape, rules and spikes
 
-Internal design doc, 2026-11-16. Not for external use; any external text built from it needs the review in `CLAUDE.md`. Decision rows: D-78 (decided) and D-92 (proposed) in [DECISIONS.md](DECISIONS.md). Terms: [GLOSSARY.md](GLOSSARY.md). Evidence: `docs/notes/04-rust-socket-tier-evidence.md` (called note 04). We cite only pages note 04 opened. Anything else is marked "from memory, not verified". We measured nothing ourselves.
+Internal design doc, 2026-11-16. Not for external use; any external text built from it needs the review in `CLAUDE.md`. Decision rows: D-78 (decided), D-92 (deferred by D-99), D-97, D-98 and D-99 (decided) in [DECISIONS.md](DECISIONS.md). Terms: [GLOSSARY.md](GLOSSARY.md). Evidence: `docs/notes/04-rust-socket-tier-evidence.md` (called note 04). We cite only pages note 04 opened. Anything else is marked "from memory, not verified". We measured nothing ourselves.
 
 Labels: **[M]** measured by the cited author on their hardware (not by us); **[C]** counted or read from a page note 04 opened or a doc we read; **[E]** our estimate with the formula shown; **[A]** assumption or design target; **[V]** vendor or author claim; **[?]** from memory, not verified. Anything called a judgment is not data.
 
@@ -10,7 +10,7 @@ Labels: **[M]** measured by the cited author on their hardware (not by us); **[C
 
 - **Decided (owner, 2026-11-16, D-78):** the whole system is Rust, including the socket tier and the room runtime. An Elixir hybrid was evaluated and dropped; the evidence is in git history.
 - **Consequence for this doc:** the question is no longer which language. It is how to make an all-Rust socket and room tier safe, and what we must build ourselves. A failed spike (section 4) triggers an engineering response (tuning, restructuring, or a deeper redesign of that component), not a language change.
-- **Proposed (not decided, D-92):** run the edge (sockets) and the room runtime as two OS processes from rung 1, even on one box (section 1).
+- **Deferred (D-92, deferred by D-99 on 2026-11-16; start as one process):** run the edge (sockets) and the room runtime as two OS processes from rung 1, even on one box (section 1).
 - **Confidence:** low to medium. Every number below is [A], [E] or third-party. The spikes in section 4 replace them with measurements.
 
 ---
@@ -18,6 +18,8 @@ Labels: **[M]** measured by the cited author on their hardware (not by us); **[C
 ## 1. The two-process day-one shape (proposed, D-92)
 
 ### 1.1 What it is
+
+> **Update (D-99, owner decision 2026-11-16): start as one process.** The two-process shape below is deferred until a spike or real load shows a need (S2 and S3 are the evidence); keep the `RoomLink` seam so the split stays a swap. Panic and cancellation isolation (R2, R5) then rely on task boundaries inside one process, which S3 must prove.
 
 Today docs 02 and 05 run one binary with roles `all` on day one and split the edge first (doc 02 section 3.3, doc 05 section 14.1). The proposal: from rung 1, run two OS processes from the same codebase, an **edge process** (TLS, WebSockets, sessions, heartbeats, soft presence, `edge-native`, `edge-compat`) and a **room runtime process** (room actors, log writer, leases), joined by the mux protocol over a local connection (loopback or a Unix socket). It uses the seam doc 02 D6 and doc 05 section 7.3 (`RoomLink`) already define. It is reversible: collapse back to one process by swapping the link for an in-process channel.
 
@@ -73,6 +75,7 @@ Write these into doc 05 section 17 (we do not edit it here). Each has an enforce
 - **Finding [M, note 04 Q1, lesismal README].** As shipped, tokio-tungstenite keeps a 128 KiB read buffer and zero-fills the part each read uses, and a write buffer that gathers frames up to 128 KiB. At 50,000 connections, echo test: 6.85 GB at defaults versus 403 MB tuned; pipeline test: 8.9 GB versus 723 MB average (900 MB peak). Throughput rose from 315k to 454k echo TPS with the tuning. Setup [C]: Docker, 3 CPUs for the server, 1 KiB payload, three runs averaged; the tuned build is the benchmark author's own, under echo load, not idle.
 - **Derived [E]:** 403 MB / 50,000 = about 8 KB per connection tuned; 6.85 GB / 50,000 = about 137 KB at defaults. By our arithmetic that is about 17x for the echo test [E: 6.85 GB / 403 MB] and about 12x for the pipeline test [E: 8.9 GB / 723 MB]. The source README's own "30x" wording is not reproduced by these figures, so treat the gap as an order-of-magnitude warning (about 12x to 17x here), not a constant.
 - **Consequence for us [E]:** at 75,000 connections the default 128 KiB read buffer alone is 75,000 x 128 KiB = about 9.6 GB; at 4 KiB it is about 300 MB.
+- **Compression adds per-connection state [V, yawc issue 60, a user report]:** about 374 KiB idle per connection with permessage-deflate and per-connection compressors, about 11 KiB with yawc's `DeflatePool` (0.5.0). Against the 32 KB budget (T1) this decides the settings: pooled compressors, `server_no_context_takeover`, and small windows (11 bits needs yawc's `zlib` feature). Measured in S1 variant (e) and gate G-WS (section 4.7).
 - **Rule.** Read buffer 4 KiB; write buffer small and shrinkable or pooled; max frame and max message sizes set explicitly (doc 09: 64 KiB frame cap, 4 KiB first frame). Never rely on crate defaults.
 - **TLS terminator choice moves memory more than the crate.** One author reports about 127 KB per connection for a TLS terminator at defaults versus about 4.9 KB added by in-process rustls [V, note 04 Q1]. Where TLS terminates is a design choice pinned by spike S1 variant (d).
 - **Enforcement.** A unit test asserting the configured values; a CI-only test that opens 10,000 loopback connections and asserts `(RSS_N - RSS_0) / N` under budget (R9).
@@ -131,7 +134,7 @@ Write these into doc 05 section 17 (we do not edit it here). Each has an enforce
 | R7 | Poison-task and panic-in-apply tests | CI |
 | R8 | Metrics, admin room list, flight recorder, tokio-console | dashboards per rung gate (doc 02 section 6.3) |
 | R9 | Counting allocator, per-connection memory test | S1, CI |
-| R10 | Two-process shape (proposed, D-92) | S2, S3 |
+| R10 | Two-process shape (deferred, D-92 and D-99) | S2, S3 |
 
 ---
 
@@ -142,7 +145,7 @@ A runtime with built-in supervision and distribution would supply these; in Rust
 | Block | Approach | Estimate [E] |
 |---|---|---|
 | Directory client, TTL cache, epoch redirect | Lookup the owner, cache with TTL, follow redirects after an epoch change (doc 02 D5) | 600 to 1,000 lines, 1 to 2 weeks |
-| Pub/sub across processes (the mux) | tonic bidirectional streams, mTLS, reconnect, per-stream credit; one encoded `Arc<EncodedEvent>` per edge mailbox; loopback in the two-process shape | 1,500 to 2,500 lines, 3 to 4 weeks |
+| Pub/sub across processes (the mux) | link technology tabled by D-99 (Unix socket, QUIC or gRPC, chosen at the first split); mTLS, reconnect, per-stream credit; one encoded `Arc<EncodedEvent>` per edge mailbox; loopback in the two-process shape | 1,500 to 2,500 lines, 3 to 4 weeks |
 | Per-edge publisher and session queues, resync | Bounded `mpsc` per edge and per session (R3) | 400 to 800 lines, 1 week |
 | Presence | Presence for a room lives at the room owner as a lease table fed by heartbeats; rebuilt on failover from heartbeats; no cluster-wide presence CRDT (doc 09 section 10.1, doc 10; note 04 Q5) | 400 to 800 lines, 1 to 2 weeks |
 | Room registry and placement | Directory plus epoch fencing in Postgres (doc 02 D5); node membership via a gossip library such as Chitchat only if needed (gossip every 1 s to 3 nodes, phi threshold 8.0 [C, note 04 Q5]), which needs generation-stamped identities and dead-node handling | included in directory row; gossip adds 1 to 2 weeks if used |
@@ -178,8 +181,8 @@ Purpose: replace [A] and [E] values with measured ones and test the specific haz
 
 ### 4.2 S1: 100k idle WebSocket connections on one box
 
-- **Build:** a Rust gateway plus room runtime with a stub room, TLS in process (rustls), axum WebSocket, 30 s ping on a shared timer wheel.
-- **Variants:** (a) library defaults; (b) tuned buffers (R1); (c) `fastwebsockets` tuned, if it integrates (doc 05 section 5); (d) TLS terminated by a separate proxy.
+- **Build:** a Rust gateway plus room runtime with a stub room, TLS in process (rustls), `yawc` WebSocket (D-97), 30 s ping on a shared timer wheel.
+- **Variants:** (a) library defaults; (b) tuned buffers (R1); (c) `yawc` tuned, with the same buffer rules as (b) (D-97); (d) TLS terminated by a separate proxy; (e) variant (c) with permessage-deflate on, pooled compressors and `server_no_context_takeover`, to price compression. `fastwebsockets` is out: it has no deflate (its README, 2026-11-16).
 - **Measure:** `(RSS_N - RSS_0) / N` at N = 10k, 50k, 100k, 150k; `smaps_rollup`; kernel memory per socket; idle CPU; ping round trip p50 and p99; counting-allocator totals; the default-versus-tuned ratio on our crate versions.
 - **Pass (T1):** tuned at 100k at or below 32 KB per connection including TLS, idle CPU under 10 percent of one core per 100k [A]. **Soft miss:** 32 to 48 KB (update the doc 02 budget; 150k x 48 KB = 7.2 GB [E], still fits). **Failure:** above 48 KB tuned after one tuning pass.
 - **Engineering response on failure:** move TLS termination out of process, shrink per-session state, pool buffers, switch crate or buffer strategy; re-run.
@@ -241,6 +244,26 @@ flowchart TD
 ```
 
 ---
+
+### 4.7 Gate G-WS: WebSocket library conformance (D-97)
+
+Not a spike; a CI gate on the library choice, run before `edge-native` is committed to `yawc`. Source for the choice: a read of the crates' own source, READMEs and CI on 2026-11-16 (agent review, doc 05 section 5 row).
+
+- **Autobahn** (the standard WebSocket conformance suite) server run at our pinned `yawc` commit, with the `zlib` feature and with the default miniz_oxide backend. Archive `index.json`. Pass: every case OK, NON-STRICT or INFORMATIONAL (their CI rule), none excluded. Their CI runs this but publishes no report, so we run our own.
+- **Real clients** against our edge, asserting the negotiated `Sec-WebSocket-Extensions` header: Python `websockets` (what Archipelago's own server and many tools use), a browser, a `soketto` client (the Archipela-Go app), and a current Archipelago client. Include a repeated or split extension offer (fixed on yawc `master`, unreleased in 0.5.0). Pass: the server's "does not support compressed" warning never appears for compressing clients.
+- **Abuse:** a compression-bomb frame against the read limit (yawc issue 55, fixed 2026-10-21); slow readers against the backpressure boundary; unbounded outgoing compression buffers (open issue 57).
+- **Supply chain:** pin a git commit or 0.5.1 or later (not crates.io 0.5.0), vendor it, `cargo-deny` and fuzz targets (the repo has `fuzz/`), and a recorded MPL-2.0 exception (owner accepted, no lawyer review).
+- **Fail:** switch to `soketto` (same gate, plus its browser corrupt-stream report, soketto issue 49), or ship without compression and accept the warning, whichever the owner picks.
+
+### 4.8 Gate G-DB: log writer and Postgres layer (D-98)
+
+CI gates on the `LogStore` writer, run before the log is relied on. Evidence: agent read of sqlx, tokio-postgres, diesel, sea-orm sources and issues, 2026-11-16 (doc 05 section 5 row).
+
+- **Cancel safety.** Cancel `commit()` at random points, then run the next batch on the same pool; assert no statement-order errors. The writer runs in a detached task, never inside `select!`, and drops the connection on any error (sqlx issue 2805).
+- **Throughput.** Fenced-batch microbenchmark on a laptop-sized Postgres: 1,000 rooms, 20 ms windows, sqlx `UNNEST` and `COPY` into a temp table. Fail below 60 percent of the 20k rows per second design value [A]; the fallback is `tokio-postgres` behind the same trait.
+- **Pooler.** The writer behind PgBouncer in transaction mode with prepared-statement support on; the PgBouncer version that added it is not verified.
+- **Fence race.** A sim test that bumps the epoch concurrently with a batch; a fenced writer must never commit.
+- **Pin.** `cargo-deny` pin; sqlx main has fixes 0.9.0 lacks (issue 4495), so decide on 0.9.0 plus workarounds or a git pin.
 
 ## 5. Risks and unknowns
 

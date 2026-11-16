@@ -114,7 +114,7 @@ Each area has one owning doc; this file does not repeat its numbers. Capacity, c
 | Serverless, workers and edge | What runs where, the cost of sockets, generation lanes, the edge web layer, protocol needs of restricted clients. | [08](08-serverless-workers-and-edge.md) |
 | Joining and lobby | Client classes, join links, two ready checks, the host readiness board, launch rules, diagnostics. | [09](09-connection-and-lobby.md) |
 | Identity and ownership | Accounts, guests, room roles (owner, co-host, moderator), sign-in and recovery, sessions, step-up, credentials. | [10](10-identity-and-room-ownership.md) |
-| Rust socket tier | The decision (all Rust, D-78), the proposed two-process day-one shape (edge process and room runtime process, D-92), the Rust engineering rules, the building blocks we write, and the spike plan. | [11](11-rust-socket-tier.md) |
+| Rust socket tier | The decision (all Rust, D-78), the two-process shape (edge process and room runtime process, D-92, deferred by D-99: start as one process), the Rust engineering rules, the building blocks we write, and the spike plan. | [11](11-rust-socket-tier.md) |
 | Start small | The ladder below rung 1: Stage 0 to Stage 3, one rented machine first, bills, capacity, triggers, honest promises. Decisions D-79 to D-91. | [12](12-start-small-ladder.md) |
 
 Where the old sections of this file went: former sections 3 to 6 are the table above and their owning docs (01, 02, 04, 03); the former section 7 (38 resolved contradictions) and section 8 (decision register) are DECISIONS Part B and Part C.
