@@ -2,9 +2,11 @@
 
 Research notes from reading the Archipelago repo (read-only, nothing copied). Paths are relative to that repo, for anyone who wants to check. "Verified" means checked in code. "Inferred" means an agent's or my reading. Snapshot taken November 2026.
 
+Snapshot: Archipelago `main` at commit `4f9545f7` (2026-11-15). Counts come from ls, wc and grep.
+
 ## Scale
 - About 83 folders under `worlds/` (about 80 games). About 694k lines of Python in total, of which about 655k are games. Core and web host are small by comparison (about 4.6k web, about 9k tests).
-- About 8.6k commits, about 346 distinct commit authors.
+- About 8.6k commits. 346 distinct author names in the git log (not necessarily 346 people).
 
 ## Generation
 - Fixed sequence of hooks run in lockstep across every game (`Main.py`). Nothing can be added or removed after item creation (`docs/world api.md`).
@@ -25,7 +27,7 @@ Research notes from reading the Archipelago repo (read-only, nothing copied). Pa
 - The server resends the full item list on connect. Each game client must remember its own "last processed index". The server never learns what the game applied.
 - DeathLink is a client convention over generic `Bounce` packets. The server has no code for it.
 - Save is a periodic full pickle every 60s, written with a plain overwrite (`MultiServer.py:685-770`, inferred risk of corruption on crash).
-- Reconnect delay doubles forever with no cap (`CommonClient.py:941`, verified).
+- Reconnect delay doubles on each failed attempt with no cap, and resets after a successful connect (`CommonClient.py:941` and `:910`, verified).
 - Five different ways a game attaches: client subclass, SNI bridge, BizHawk Lua bridge, external-language libraries, text client. About 10 client scripts at repo root and about 69 English setup guides.
 - Patching: players supply their own ROM, a hash is verified, a patched copy is written next to the patch file.
 - Install from source prompts interactively and installs every game's requirements together, all or nothing.
@@ -48,13 +50,14 @@ Research notes from reading the Archipelago repo (read-only, nothing copied). Pa
 Full details in the agent report. Key points:
 - The wire contract is two name-to-int dicts plus groups. IDs are namespaced per game.
 - A good pattern to copy: an append-only ID ledger (Lingo).
-- About 80 world files use `lambda state` rules. Three use `rule_builder`.
+- About 80 worlds (168 files) use `lambda state` rules (counted). Three use `rule_builder`.
 - Legacy worlds need CPython: metaclasses, global monkey-patching of the logic state, direct list edits, Python `random`, per-world pip requirements.
 - Declarative share (counted): about 91% for one game, about 85% for two others. Estimated 60-90% for small games. About 55-65% for large ones. ROM output and client code are never declarative.
 - Escape-hatch hotspots: seeded shuffles with retries, generated mission graphs, phase-dependent logic, patch output.
 - Not benchmarked: WASM speed for hot rule loops.
 
 ## Governance
+Source: their `docs/world maintainer.md`, `docs/CODEOWNERS` and `docs/contributing.md`, read by an agent, not re-checked by us.
 - World changes need a world maintainer plus a core maintainer. Maintainers are added by majority vote on Discord over a week.
 - Contributing guide admits test coverage is incomplete.
 - Docs are inconsistent across games. 69 setup guides in English, fewer than a dozen in each other language.

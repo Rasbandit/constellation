@@ -6,11 +6,11 @@ Research notes, not legal advice. Take this to an IP and software lawyer before 
 - Root license is MIT with four copyright holders listed.
 - Every sub-license sampled is MIT: a Super Metroid randomizer, SMZ3, Ocarina of Time, an SC2 bot library, Civ 6, the Factorio mod, Pokemon Red and Blue.
 - The website branding and background art are marked "All rights reserved". Do not reuse.
-- No trademark notice and no contributor agreement found. About 346 people have commits.
+- No trademark notice and no contributor agreement found. 346 distinct author names appear in the git log.
 - Other world license files were not read (e.g. cvcotm, celeste64, ffmq). A game data file extracted from a commercial ROM exists in one world. MIT does not cure that.
 
 ## Reusing code (MIT)
-Allowed: copy, modify, sell, sublicense. Condition: keep the copyright and permission notice in copies and substantial portions. A port to another language that follows their code closely is a derived work, so keep the notice. No permission needed from authors.
+Allowed: copy, modify, sell, sublicense. Condition: keep the copyright and permission notice in copies and substantial portions. A port to another language that follows their code closely is a derived work, so keep the notice. Per our reading of MIT, no permission is needed from authors.
 
 For now the plan is to copy nothing. If we later run their games unmodified in a sidecar, keep their notices with the code.
 

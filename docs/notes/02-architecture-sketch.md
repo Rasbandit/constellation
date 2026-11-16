@@ -13,7 +13,7 @@ Early thinking, not a design. Everything here is a hypothesis to test.
 ## Layers
 
 ```
- Edges:     v2 native edge        AP-compat edge        Web (console, inbox, API)
+ Edges:     native edge        AP-compat edge        Web (console, inbox, API)
                  \                    |                    /
  Core:                 Room actors + event log + subscriptions
                                       |
@@ -29,7 +29,7 @@ Early thinking, not a design. Everything here is a hypothesis to test.
 2. Path: `wss://host/r/abc123`. The reference Python client passes the full URL through. Other-language clients not checked.
 3. Per-player token used as the password on a shared port. The server speaks first in the old protocol, so the gateway has to send a placeholder greeting first. Untested.
 
-## The v2 protocol (to write)
+## The native protocol (to write)
 - Room key in URL. Per-slot token, not a shared password.
 - Items as a numbered log with server-recorded acks. Resume with "after N".
 - Game name tables fetched by checksum from a CDN, not on every connect.

@@ -1,5 +1,7 @@
 # Constellation
 
+> Draft for private review. Statements about law and about Archipelago have not been reviewed by a lawyer or by the Archipelago maintainers. Facts are sourced or labeled in `notes/`.
+
 **Multiplayer randomizers that anyone can join in one click.**
 
 Working name. Status: early research, no product yet. Items marked **[TBD]** are things we have not measured or decided.
@@ -10,19 +12,19 @@ Working name. Status: early research, no product yet. Items marked **[TBD]** are
 
 Constellation is the easy way to play a *multiworld randomizer*: a game mode where several people play different games at once, and the items you find in your game are secretly handed to someone else's game. We turn a setup that needs config files, network ports and patch files into "enter a room key and press connect."
 
-We run it for players, and we sell studios an official integration so new games ship with it built in.
+We run it for players, and we sell studios a supported, first-party integration so new games ship with it built in.
 
 ---
 
 ## 2. The issue
 
-Today one open-source project, Archipelago, owns this space. It works. Roughly 80 games are supported, and the shuffling logic is solid. It was built by volunteers, mostly for people comfortable with technical setup, so the experience around that core is hard for newcomers.
+Today one open-source project, Archipelago, is the main open-source project in this space. It works. Roughly 80 games are supported, and the shuffling logic is solid. It was built by volunteers, mostly for people comfortable with technical setup, so the experience around that core is hard for newcomers.
 
 ### What a player goes through
 
 | Step | What happens today | What it costs the player |
 |------|--------------------|--------------------------|
-| Set up | Write a settings file in a text format called YAML. Option values look like `true: 50`, where 50 is a probability weight, not "true". | A typo in an option name only logs a warning and silently falls back to the default. |
+| Set up | Write a settings file in a text format called YAML. Option values look like `true: 50`, where 50 is a probability weight, not "true". | A typo in an option name logs a warning, then falls back to the default. |
 | Gather | One person collects everyone's file by hand and runs the generator. | One organizer becomes the bottleneck. |
 | Patch | Find your own copy of the exact game ROM (the game's data file), set a path in a config file, and apply a patch file. | Wrong version gives a vague "no handler found" error. |
 | Install | Pick from several launch paths: separate client programs, an emulator bridge, or a scripting plugin. There are about 69 English setup guides. | Each game is a separate project to learn. |
@@ -33,13 +35,13 @@ Today one open-source project, Archipelago, owns this space. It works. Roughly 8
 
 - **Developers** must get their game merged into one shared repository and approved by volunteer maintainers over Discord, or ship an unofficial add-on with no registry and no update channel.
 - **Hosts** run a server that is one process per room, with a text-command admin console behind one shared password.
-- **Operators** hit a hard ceiling: the public site gives each room a port from a range of 16,384, so one machine tops out at about that many live rooms. Each room also polls the database every 5 seconds just to hear about commands.
+- **Operators** hit a default limit (counted from their default configuration, November 2026): rooms get ports from a range of 16,384 per IP address, so a single address tops out at about that many live rooms unless the setup changes. Each room also polls the database every 5 seconds just to hear about commands.
 
 ### The root cause
 
-The core was designed so that one program holds one game session on one port, with identity by slot name. Everything else, ports, files, clients, is a workaround for that. It is not a bug someone can patch. It needs a different foundation.
+The core was designed so that one program holds one game session on one port, with identity by slot name. Everything else, ports, files, clients, is a workaround for that. In our reading (inferred), much of the setup friction follows from that one-session-per-port design, which made sense for a volunteer project. Fixing it means a different foundation, not a patch.
 
-Evidence for every claim above is in [`notes/01-archipelago-findings.md`](notes/01-archipelago-findings.md).
+Most claims above are sourced with file and line references in [`notes/01-archipelago-findings.md`](notes/01-archipelago-findings.md). A few are not sourced there and should be treated as not verified: the maintainer approval process, the lack of a registry for third-party games, and some error message wording.
 
 ---
 
@@ -70,7 +72,7 @@ No config files. No ports. No patch files to move around. No setup guide longer 
 
 ### What stays compatible
 
-We run existing Archipelago games on day one through a compatibility layer, and existing Archipelago game clients can connect to a Constellation room. We are a compatible front door to what the community built, not a replacement for it. That community is the reason the space exists.
+We run existing Archipelago games on day one through a compatibility layer, and existing Archipelago game clients can connect to a Constellation room. We are a compatible front door to what the community built, a compatible front door to be used alongside it. That community is the reason the space exists.
 
 ---
 
@@ -98,17 +100,17 @@ Design target, not yet proven: tens of thousands of open connections on one well
 
 - **Proven demand.** A volunteer project has built about 80 supported games and thousands of commits. People clearly want this. **[TBD: player and room counts. We have no verified numbers yet.]**
 - **A clear gap.** The shuffling is solved. The experience is not.
-- **A second market that is not yet served.** Studios that want to ship a randomizer or multiworld mode in a new game have no polished, supported, official option today.
-- **A format shift.** The most promising existing games already store their world as data (one sampled game is about 85% data). A new, simple format is realistic.
+- **A second market that is not yet served.** Studios that want to ship a randomizer or multiworld mode in a new game have no polished, supported, first-party option today (inferred, not verified).
+- **A format shift.** In our sample of 8 existing games, three were about 85-91% data and rules by line count (counted). The others are estimated lower. A new, simple format is realistic.
 
 ---
 
 ## 6. Marketing and growth
 
-### The wedge: be the easiest way to run what people already play
+### Start here: be the easiest way to run what people already play
 
-1. **Start inside the existing community.** Launch as a free, AP-compatible host with two things AP lacks: join links and the inbox. Players try it because it takes one minute, not an hour.
-2. **Be a good citizen.** Say "works with Archipelago", support the same clients, publish our protocol openly, credit the project. The community writes the games. Goodwill is the moat.
+1. **Start inside the existing community.** Launch as a free, AP-compatible host with two things we found no sign of in their repo: join links and the inbox. Players try it because it takes one minute, not an hour.
+2. **Be a good citizen.** Say "works with Archipelago", support the same clients, publish our protocol openly, credit the project. The community writes the games. Goodwill is what makes this work.
 3. **Win the people who organize.** Hosts and streamers decide where friends play. Give them the console, race mode, overlays for stream (a browser source for OBS) and shareable results pages.
 4. **Shareable moments.** A results page after each run (who sent what, a timeline, stats) is something players post. It markets the product for us.
 5. **Be findable.** Pages for "how to host a [game] multiworld", game-specific landing pages, and a public room directory.
@@ -116,7 +118,7 @@ Design target, not yet proven: tens of thousands of open connections on one well
 ### The second wave: studios and indie developers
 
 - Offer the SDK free and open for indie and hobby developers. It grows the catalog and builds the habit.
-- Sell **official integration and support** to studios that want it shipped in their game. We handle the networking, rooms, notifications and moderation. They get a "multiworld ready" feature.
+- Sell **supported, first-party integration** to studios that want it shipped in their game. We handle the networking, rooms, notifications and moderation. They get a "multiworld ready" feature.
 - Show up where developers are: game jams, engine communities (Unity, Godot, Unreal plugin), and a public showcase of games that shipped with it.
 
 ### Messaging
@@ -133,7 +135,7 @@ We charge for the **service**, never for other people's game content. See legal 
 
 | Stream | Who pays | What they get | When | Main risk |
 |--------|----------|---------------|------|-----------|
-| **Studio integration and support** | Game studios | Official SDK integration, licensed assets, support, SLA, custom branding | Early, even before consumer scale | Long sales cycles, small number of buyers |
+| **Studio integration and support** | Game studios | First-party SDK integration, licensed assets, support, SLA, custom branding | Early, even before consumer scale | Long sales cycles, small number of buyers |
 | **Paid rooms** | Hosts, communities | Bigger rooms, longer-lived or always-on rooms, private rooms, custom domain, more history | After launch | Free tier must stay generous or players leave |
 | **Notifications and integrations** | Players and communities | Push, SMS, Discord bot, webhooks, summaries | After inbox ships | Small willingness to pay per player |
 | **Creator and event tools** | Streamers, tournament runners | Race mode, brackets, overlays, branded pages, analytics | Mid term | Prizes and entry fees raise gambling-law issues, so we avoid them |
@@ -162,13 +164,13 @@ Prices, margins and projections: **[TBD, needs customer interviews and a cost mo
 
 | Risk | Why it matters | Plan |
 |------|----------------|------|
-| **Publisher IP** (the big one) | Fan randomizers survive because they are free hobby projects that distribute no game files. Charging money raises the stakes. | Never host or distribute game files. Patch on the player's own machine. Make official studio deals the paid business. Get a lawyer before launch. |
-| **Community backlash** | Looking like a takeover would lose the people who build the games. | Stay compatible, credit openly, contribute back, release the protocol and SDK openly. |
+| **Publisher IP** (the big one) | Our reading (inferred, not legal advice): fan randomizers have mostly avoided trouble by being free and distributing no game files. Charging money may raise the stakes. | Never host or distribute game files. Patch on the player's own machine. Make studio deals the paid business. Get a lawyer before launch. |
+| **Community backlash** | Looking like we compete with the community would lose the people who build the games. | Stay compatible, credit openly, contribute back, release the protocol and SDK openly. |
 | **Chicken and egg** | No games means no players. | Run all existing games on day one through the compatibility layer. |
 | **One-machine risk** | A small fast server is a single point of failure. | Hot standby, replicated backups, tested restore, from the first paying user. |
 | **Abuse** | Free hosting attracts spam, and uploaded game plugins are code that runs on our servers. | Quotas, rate limits, name moderation, and sandboxing everything uploaded. |
 | **Generation cost** | Old Python generation is heavy. | Cache by input, autoscale workers, and move to the native format over time. |
-| **Console reality** | A stock console cannot run a randomizer at all. | Support modded consoles, PC and emulators, with a pairing-code flow and in-browser patching. Official studio games can integrate directly. |
+| **Console reality** | A stock console cannot run a randomizer at all. | Support modded consoles, PC and emulators, with a pairing-code flow and in-browser patching. Studio games can integrate directly. |
 
 Legal summary and the questions to bring to a lawyer: [`notes/03-legal-notes.md`](notes/03-legal-notes.md). This is research, not legal advice.
 

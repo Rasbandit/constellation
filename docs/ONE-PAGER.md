@@ -1,5 +1,7 @@
 # Constellation: the one-page version
 
+> Draft for private review. Statements about law and about Archipelago have not been reviewed by a lawyer or by the Archipelago maintainers. Facts are sourced or labeled in `notes/`.
+
 Working name. Details: [`EXPLAINER.md`](EXPLAINER.md) (plain words) and [`PITCH.md`](PITCH.md) (technical).
 
 **The idea.** In a multiworld randomizer, friends play different video games at once, and the treasure you find in your game is secretly swapped into a friend's game. It is a team puzzle that runs for days.
@@ -13,7 +15,7 @@ Working name. Details: [`EXPLAINER.md`](EXPLAINER.md) (plain words) and [`PITCH.
 - **Compatible:** existing Archipelago games and programs work from day one.
 
 **How we make money.** We charge for the service, never for game files.
-1. Game studios pay for an official, supported integration built in during development. The earliest income.
+1. Game studios pay for a supported, first-party integration built in during development. The earliest income.
 2. Bigger, private or longer-lasting rooms.
 3. Phone and Discord alerts.
 4. Tools for streamers and event runners.

@@ -1,6 +1,6 @@
 # Constellation
 
-Working name. Early research for an easier way to play multiworld randomizers, plus an official integration product for game studios. No code yet. Nothing here is copied from Archipelago.
+Working name. Early research for an easier way to play multiworld randomizers, plus a supported, first-party integration product for game studios. No code yet. Nothing here is copied from Archipelago.
 
 - [`docs/ONE-PAGER.md`](docs/ONE-PAGER.md): the same story on one page, for chat.
 - [`docs/EXPLAINER.md`](docs/EXPLAINER.md): the non-technical version. Share this one with anyone new.

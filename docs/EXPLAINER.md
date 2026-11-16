@@ -1,5 +1,7 @@
 # Constellation, in plain words
 
+> Draft for private review. Statements about law and about Archipelago have not been reviewed by a lawyer or by the Archipelago maintainers. Facts are sourced or labeled in `notes/`.
+
 Working name. This page needs no technical background. The technical version is in [`PITCH.md`](PITCH.md) and [`notes/`](notes/).
 
 ## What is a multiworld randomizer?
@@ -19,13 +21,13 @@ Everything around that part is hard. Getting a game started feels like setting u
 - **Settings are written in a text file** with odd rules. You will see lines like `true: 50`, where "50" does not mean "true". It is a probability. Mistype a setting and it quietly gets ignored.
 - **One person has to gather everyone's files** and run a program to build the game for the group.
 - **You need your own copy of the game file**, in exactly the right version, and a patch file applied to it. If anything is off you get an unhelpful error.
-- **Joining means typing a server address and a "port number"**, like a door number on a building. Those numbers can change, and your internet router can block them.
+- **Joining means typing a server address and a "port number"**, like a door number on a building. Those numbers can change (we think, not yet confirmed), and a router or firewall can block them.
 - **Each game needs its own helper program**, with its own setup guide. There are about 70 guides.
 - **You never hear about what happened.** The game runs for days, and nothing tells you "someone just found the item you've been waiting for."
 - **Running a game for friends** means typed commands and one shared password. Nothing like a control panel.
 - **For people who make games,** adding a game means getting it approved by volunteers and merged into one shared project.
 
-Almost none of this is a flaw in the idea. It is what happens when a hobby project grows without anyone redesigning the foundation.
+Almost none of this is a flaw in the idea. These are design tradeoffs that suit technical users. Newcomers pay for them.
 
 ## What are we building?
 
@@ -54,7 +56,7 @@ We are not trying to replace anyone. Existing Archipelago games will work on day
 
 We charge for the service, never for other people's games.
 
-- **Game studios** pay us for an official, supported version built into their game while they are making it. This is the cleanest and earliest source of income.
+- **Game studios** pay us for a supported, first-party version built into their game while they are making it. This is the cleanest and earliest source of income.
 - **Hosts and communities** can pay for bigger, private, or longer-lasting game rooms.
 - **Players and communities** can pay for extras like phone alerts and Discord tools.
 - **Streamers and event runners** can pay for race tools and stream overlays.
@@ -64,8 +66,8 @@ We will never host or sell game files. Players always use their own copy.
 
 ## What could go wrong?
 
-- **The companies that own the games.** Free fan projects have mostly been left alone. A business could draw attention. We keep the paid side to services and official studio deals, and we will get a lawyer's advice before launch.
-- **Upsetting the community.** If we look like we are taking over, the people who make the games walk away. So we stay compatible, give credit, and share what we build openly.
+- **The companies that own the games.** Free fan projects seem to have mostly been left alone (our impression, not checked). A business could draw attention. We keep the paid side to services and studio deals, and we will get a lawyer's advice before launch.
+- **Upsetting the community.** If we look like we compete with the community, the people who make the games walk away. So we stay compatible, give credit, and share what we build openly.
 - **No games means no players.** Running all existing games from day one is how we avoid it.
 - **Cost.** Building each game for a group takes real computing power. We need to measure it and price accordingly.
 
