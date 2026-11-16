@@ -153,7 +153,7 @@ Rules: `room-core` and `proto` have zero IO dependencies. `edge-compat` is the o
 
 ### 3.3 Monolith on day one, and when each piece splits
 
-Day one at rung 1 (Stage 0 to Stage 3 come first and use one box with no standby at Stage 0 and Stage 1, doc 12): one `constellation` binary with roles `all`, one Postgres (primary plus sync standby in a second zone), one object store, one separate `gen-worker` pool. Two serving boxes (primary and an in-region standby running the same binary read-only until promoted). Per D-65 (open) rung 1 also carries a warm standby in a second region with a witness and a manual promotion drill (doc 06 section 12; about +$470 per month, doc 06 section 10.2, not included in the $3,452 of section 5.10). Generation hosts need no KVM on day one (D-04).
+Day one at rung 1 (Stage 0 to Stage 3 come first and use one box with no standby at Stage 0 and Stage 1, doc 12): one `constellation` binary with roles `all`, one Postgres (primary plus sync standby in a second zone), one object store, one separate `gen-worker` pool. Two serving boxes (primary and an in-region standby running the same binary read-only until promoted). Per D-65 (open) rung 1 also carries a warm standby in a second region with a witness and a manual promotion drill (doc 06 section 12; second-region cost in doc 13 section 8, not included in the section 5.10 table). Generation hosts need no KVM on day one (D-04).
 
 | Split | Trigger (any one) | Why that trigger |
 |---|---|---|
@@ -247,7 +247,7 @@ Stall targets, all same region: design 200 ms (this diagram), gate 500 ms at p99
 
 ## 5. Capacity and cost model
 
-All inputs are in the table. Change an input and recompute with the formulas. We computed the figures with a short script (not committed; the formulas reproduce them). This model is the single source for capacity and cost inputs; docs 03, 04, 06 and 08 point here and keep only deltas (D-29).
+All inputs are in the table. Change an input and recompute with the formulas. We computed the figures with a short script (not committed; the formulas reproduce them). This section keeps the capacity inputs and sizing formulas. [Doc 13](13-cost-model.md) is the single source for cost numbers and what-if scenarios (D-29); its scenario D reproduces the cost table in 5.10, and docs 03, 04, 06, 08 and 12 point there and keep only deltas.
 
 ### 5.0 Inputs
 
@@ -311,7 +311,7 @@ All inputs are in the table. Change an input and recompute with the formulas. We
 
 Retention policy and deletion windows are owned by doc 04 section 6.6; WAL and backup retention is in section 5.6. Sizes (`gamekb * G * days`): hot `= G*158.5KB*(L+7)` -> 158 GB / 1.6 TB / 15.9 TB; warm 90 d -> 1.4 / 14 / 143 TB; archive 2 y -> 11.6 / 116 / 1,157 TB [E].
 
-Unit prices: warm $0.02/GB-month, archive $0.004/GB-month [?]. Steady-state monthly: warm $29 / $285 / $2.9k; archive $46 / $463 / $4.6k [E]. Storage is not the cost driver at any rung; classes exist to keep Postgres small and fast, not to save money.
+Unit prices: warm $0.02/GB-month, archive $0.004/GB-month [?]. Steady-state monthly: warm $29 / $285 / $2.9k; archive $46 / $463 / $4.6k [E]. Current prices are in [doc 13 section 1](13-cost-model.md#1-prices-opened-for-this-doc). Storage is not the cost driver at any rung; classes exist to keep Postgres small and fast, not to save money.
 
 When to shard Postgres: hot set above 1 TB or write peak above 60% of the tested single-primary limit. Assume one primary sustains 20k batched row-inserts/s [A, to benchmark; group commit across rooms in 10-20 ms windows]. Shards `= ceil(peak_ev / 20,000)` -> 1 / 6 / 57 [E]. Rung 3 at 57+ shards across regions is where we reassess a purpose-built log (for example a replicated segment log) behind the same `LogStore` trait.
 
@@ -363,7 +363,7 @@ gen_jobs(job_id uuid pk, account_id, input_hash, state, priority, attempts, work
 - **Cache.** Key `H(gen_version, canonical options per slot, seed, world versions, host settings)`; a hit returns the stored seed instantly. **Sharing rule (D-17; written once, here):** shared across accounts only for public presets and daily seeds; a private seed is wrapped under the room's data key (D12) and never served to another account or room. Race-mode seeds are private (never in the shared cache) and stored by output hash only; their commit-reveal reproducibility is owned by doc 01 D3.3. (Archipelago's own race flag reseeds nondeterministically [C: notes/01]; that is a fact about their server, not our design.) Hit rates are [A].
 - **Workers.** Job limits (D-16): default 1 vCPU, 2 GB, 300 s (doc 04), per-plan raises up to 600 s and 4 GB [C: notes/01 defaults]; re-run the 5.10 sensitivity for heavy legacy worlds. Node: 64 cores, 256 GB [A], about 50 concurrent jobs at 2 GB. Lanes: doc 04 section 4.1. Warm pool: a microVM or process snapshot with vetted worlds pre-imported, restored per job (no tenant data in the snapshot; Firecracker boot about 125 ms [?]), addressing the cold-start import cost in notes/02. Regions and cross-region cache sharing: doc 06 section 9.
 - **Autoscale and abuse.** Scale on `queue_wait_p95` and `queued_cpu_seconds / fleet_cores`; floor = average load, burst on spot, scale-down lag 10 min. Per-account quotas, no sandbox network, account creation behind proof-of-work or captcha; numbers in doc 04 sections 6.5 and 9.
-- **Cost per generation.** `cost = g*(1-h)*s_eff/3600*c_core*ovh`; rung 1: `1.3*0.9*30/3600*0.03*2 = $0.00059` per game [E], **$0.59 per 1,000 games**, about half of rung-1 infrastructure cost.
+- **Cost per generation.** `cost = g*(1-h)*s_eff/3600*c_core*ovh`; rung 1: `1.3*0.9*30/3600*0.03*2 = $0.00059` per game [E]. Its share of total cost is in [doc 13 section 6](13-cost-model.md#6-what-drives-the-gap-at-100000-games-a-day).
 - **Path to native.** Port the top games first (by measured volume); `s` falls from about 30 to about 3 [A, unmeasured; WASM speed for hot rule loops not benchmarked per notes/01]. A reserved, disabled world module (WASM) covers custom logic (D-10); the legacy sidecar serves the long tail.
 
 ### 5.8 Realtime and notifications
@@ -389,13 +389,15 @@ Cost lines (monthly), with formulas. `games/month = G*30`.
 - Database (R2/R3): `shards x $600`, each machine one primary plus one replica of another shard [A].
 - Generation: `cores_avg * 730 * c_core * ovh`.
 - Storage: section 5.4. Egress/CDN: `games/month * 1.2 MB * $/GB` ($0.03 R1, $0.02 later) [A].
-- Notifications: 5.8. Fixed (DDoS plan, monitoring, secrets, CI, support tooling): $500 / $5,000 / $50,000 [A]. Observability +3% at R2/R3. Multi-region duplication factor 1.25 at R3 [A]. The rung 1 warm-standby region is not included (doc 06 section 10.2: about +$470).
+- Notifications: 5.8. Fixed (DDoS plan, monitoring, secrets, CI, support tooling): $500 / $5,000 / $50,000 [A]. Observability +3% at R2/R3. Multi-region duplication factor 1.25 at R3 [A]. The rung 1 warm-standby region is not included (doc 13 section 8 has the second-region cost).
+
+Scenario D in [doc 13](13-cost-model.md#5-results) reproduces this table; doc 13 owns cost numbers and what-if scenarios (A to E). The rung 3 storage cell was corrected from $24,281 to $23,681 (the formulas and the $218,180 total both require it).
 
 | | Rung 1: 100k/day | Rung 2: 1M/day | Rung 3: 10M/day |
 |---|---|---|---|
 | Serving + DB | $900 | $7,800 (6 edge, 6 room, 6 shards) | $68,100 (51 edge, 47 room, 57 shards) |
 | Generation | $1,779 (41 cores, n=0) | $7,612 (174 cores, n=0.5) | $27,679 (632 cores, n=0.8) |
-| Storage + egress + mail | $273 | $2,368 | $24,281 |
+| Storage + egress + mail | $273 | $2,368 | $23,681 |
 | Fixed | $500 | $5,000 | $50,000 |
 | **Total / month [E]** | **$3,452** | **$23,463** | **$218,180** |
 | **Per 1,000 games [E]** | **$1.15** | **$0.78** | **$0.73** |
@@ -404,12 +406,12 @@ Cost lines (monthly), with formulas. `games/month = G*30`.
 
 DAU `= G*L*P*a` -> 600k / 6M / 60M [E].
 
-Sensitivity [E]: with no native generation (n=0) at R2 the total is about $29.7k ($0.99 per 1,000); at R3 about $307k ($1.02 per 1,000). With `s=60` at rung 1, generation doubles and the total rises to about $5.2k ($1.74 per 1,000). With `K=600` the event rate doubles and the R2/R3 database lines roughly double. Generation CPU and event rate are the two inputs to measure first. Re-run the generation sensitivity with the D-16 job limits for heavy legacy worlds before any price is set. Everything here excludes people, payment fees and taxes.
+Sensitivity: see [doc 13 sections 6 and 10](13-cost-model.md#10-sensitivity) for dollar effects of native generation, generation CPU and other inputs. With `K=600` the event rate doubles and the R2/R3 database lines roughly double. Generation CPU and event rate are the two inputs to measure first. Re-run the generation sensitivity with the D-16 job limits for heavy legacy worlds before any price is set. Everything here excludes people, payment fees and taxes.
 
 ### 5.11 What the cost implies for free tier and pricing
 
-- Cost is about $0.001 per game (rung 1: $1.15 / 1,000 games) [E]; even at 5x error it is $0.006. A free tier can be generous on room count; the limiter should be CPU-seconds and retention. Limits are placeholders [A] until they live in the single `config` quota table (D-23); numbers are owned by doc 04 section 9. Free-tier retention: logs 90 days then results summary only; idle rooms evicted from RAM after 15 min; email digests only.
-- A paid host at $5/month [A] covers the marginal infrastructure of about 4,000 free games at $0.00115 each [E], so a conversion rate far below 1% [A] pays for a free tier; the real cost of a paid room is support. Paid rooms: more slots, always-warm placement, longer retention, custom domain. Studios and tournaments: a dedicated pool (reserved nodes, priority lane, SLA) at a fixed fee plus per-event fee.
+- Cost per game is in [doc 13 section 9](13-cost-model.md#9-break-even); the owner-rented scenarios are well below scenario D. A free tier can be generous on room count; the limiter should be CPU-seconds and retention. Limits are placeholders [A] until they live in the single `config` quota table (D-23); numbers are owned by doc 04 section 9. Free-tier retention: logs 90 days then results summary only; idle rooms evicted from RAM after 15 min; email digests only.
+- A paid host at $5/month [A] covers the marginal infrastructure of many free games (count in doc 13 section 9), so a conversion rate far below 1% [A] pays for a free tier; the real cost of a paid room is support. Paid rooms: more slots, always-warm placement, longer retention, custom domain. Studios and tournaments: a dedicated pool (reserved nodes, priority lane, SLA) at a fixed fee plus per-event fee.
 - The risk is not average cost but abuse (free generation as a compute service) and the long tail of legacy games; hence CPU-second quotas and no-network sandboxes.
 
 ---
@@ -496,7 +498,7 @@ Targets: 750k connections, 113k events/s peak [E]. Deliver: separate edges and r
   4. Region failover drill (if two regions): promotion within 15 min, measured RPO.
   5. Tournament simulation: 20k rooms start within 60 s; countdown skew p95 under 250 ms.
   6. Generation burst: 5x arrival for 30 min; autoscaler restores queue wait p95 under 30 s within 10 min.
-  7. Cost check: measured cost per 1,000 games within +/-30% of the model, else update the model before pricing.
+  7. Cost check: measured cost per 1,000 games within +/-30% of the doc 13 scenario chosen for that rung, else update the model before pricing.
 
 ### Rung 3: 10M+ games/day, multi-region
 Targets: 7.5M connections, 1.1M events/s peak [E]. Deliver: 3+ regions with residency, regional shard sets, evaluate a purpose-built log behind `LogStore`, native generation share above 50%, dedicated notification pipeline.

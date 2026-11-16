@@ -41,7 +41,7 @@ Scale rungs are doc 02's: rung 1 = 100k games/day, rung 2 = 1M, rung 3 = 10M+ (d
 | Q3 | Latency barely matters for item delivery (300 ms is invisible, doc 02 D9) but matters for **connect time**, **countdown and race starts**, **chat** and the **console UI** | Terminate TLS near the player, measure clock offset per client, keep chat on the room path with a latency budget, serve console reads from regional derived views. | [A] |
 | Q4 | Correctness over latency: never lose or double-apply an acknowledged item, never fork a room | One writer, fenced, lease-guarded, no active-active. When forced to choose, stall rather than diverge. | policy |
 | Q5 | Residency: EU rooms stay in the EU (doc 04 section 6.8: pinned rooms "and its logs never leave it", backups follow the data) | A room property enforced in one placement policy and one replication-target allowlist, covering logs, snapshots, backups, keys, derived views, generation inputs and the edge hop. | doc 04 [C] |
-| Q6 | Free-tier cost pressure (doc 02 section 5.11: about $1.15 per 1,000 games at rung 1 [E]) | Cross-region bytes are small (section 10); the real cost is idle second-region machines. No second active region before demand pays for it. | [E] |
+| Q6 | Free-tier cost pressure (doc 02 section 5.11; per-game cost in [doc 13](13-cost-model.md#5-results)) | Cross-region bytes are small (section 10); the real cost is idle second-region machines. No second active region before demand pays for it. | [E] |
 | Q7 | Compatibility: existing clients know only a hostname and port, keep their own item index and back off with a doubling, uncapped reconnect delay [C: notes/01 lines 27 and 30] | The edge makes multi-region invisible to a client that cannot follow redirects or learn a new epoch. | [C] |
 | Q8 | Small team, Rust first | One boring replicated store plus our own fencing logic, not operating a distributed database. Build the simulator; buy the consensus store. | policy |
 
@@ -408,7 +408,7 @@ There is no single home, by construction:
 
 | Question | Decision | Why |
 |---|---|---|
-| Where do jobs run? | **Unpinned rooms:** the cheapest region with spare capacity, preferring the room's home (zero copy). **Pinned rooms:** inside the jurisdiction only; generation inputs (slot names, settings) can be personal data (doc 04), so they follow the pin. | Generation is the largest cost line (doc 02 section 5.7: about half of rung-1 cost, $0.59 per 1,000 games [E]); idle CPU in a cheaper region is the biggest saving. Copying an 80 KB result costs almost nothing. Residency wins over cost for pinned jobs (policy, not tuning). |
+| Where do jobs run? | **Unpinned rooms:** the cheapest region with spare capacity, preferring the room's home (zero copy). **Pinned rooms:** inside the jurisdiction only; generation inputs (slot names, settings) can be personal data (doc 04), so they follow the pin. | Generation is the largest cost line (doc 02 section 5.7; share in [doc 13 section 6](13-cost-model.md#6-what-drives-the-gap-at-100000-games-a-day)); idle CPU in a cheaper region is the biggest saving. Copying an 80 KB result costs almost nothing. Residency wins over cost for pinned jobs (policy, not tuning). |
 | Result identity | Content-addressed: `result_id = H(output)`; cache key `H(gen_version, canonical inputs, world hashes)` (doc 02 section 5.7). Race-mode seeds are private and never in the shared cache (doc 02 section 5.7). | Immutable objects replicate without conflicts and verify anywhere |
 | Replication | The result is written to the job region's object store, then **copied to the room's home region (and its partner) before the room leaves `Generating`** | A room never depends on a remote bucket to start |
 | Cache sharing | Per-region cache plus a small global index `input_hash -> region` (eventually consistent) lets another region pull a hit (80 KB) instead of regenerating (about 30 CPU-seconds [A, doc 02]). Pinned jobs consult only the in-jurisdiction index. | A stale index only causes a miss |
@@ -420,7 +420,7 @@ There is no single home, by construction:
 
 ## 10. Cost
 
-All costs follow doc 02's unit assumptions; the transfer unit price `p_x` is **not** quoted, since we opened no pricing page.
+Dollar figures for the second region are owned by [doc 13 section 8](13-cost-model.md#8-redundancy-levels-b-inputs) (scenarios B and C, redundancy levels); this section keeps only byte counts. Unit assumptions follow doc 13; the transfer unit price `p_x` is **not** quoted, since we opened no pricing page.
 
 ### 10.1 Cross-region bytes
 
@@ -437,25 +437,25 @@ Inputs [A]: events per game 1,950 [E, doc 02]; 120 bytes each uncompressed [A, d
 | Total per month [E] | 0.83 TB | 17.0 TB | 170 TB |
 | Dollars per month per $0.01/GB of `p_x` [E, arithmetic only] | $8 | $170 | $1,700 |
 
-At any `p_x` below $0.10/GB, rung 3 transfer would be under about $17k per month, under 8% of doc 02's $218k total [E: 17,000 / 218,180]. **Transfer is not the cost driver; idle second-region machines are.** If the owner's real `p_x` is larger, the first levers are replicating only the log delta (already assumed), shortening what is replicated for free-tier rooms to the final snapshot after finish, and pushing `x` down with better placement.
+At any `p_x` below $0.10/GB, rung 3 transfer would be under about $17k per month, a small share of the rung 3 total in [doc 13 section 5](13-cost-model.md#5-results) [E]. **Transfer is not the cost driver; idle second-region machines are.** If the owner's real `p_x` is larger, the first levers are replicating only the log delta (already assumed), shortening what is replicated for free-tier rooms to the final snapshot after finish, and pushing `x` down with better placement.
 
 Storage: replicating the hot and warm storage classes doubles hot storage (doc 02 section 5.4: 158 GB / 1.6 TB / 15.9 TB [E]) and the warm class unless free-tier warm data stays in one region plus backups. Decision: warm and archive classes are replicated per policy: paid and pinned rooms in two regions, free rooms once in object storage with cross-region bucket replication only for the final results page [A].
 
 ### 10.2 The second region at each rung
 
-| Rung | What the second region is | Added cost [E] | Share of doc 02 total |
-|---|---|---|---|
-| 1 | Warm standby: one box at doc 02's $450 [A] running the same binary read-only, its replica disk, plus a witness VM (assume under $20 per month [A, not a quote]); on top of doc 02's two in-region serving boxes | about $470 | 13.6% of $3,452 |
-| 2 | Active region: replicas for 6 shards (6 x $600 = $3,600), 2 edge nodes ($500), 2 room nodes ($900), fixed overhead +20% of $5,000 ($1,000) | about $6,000 | 25.6% of $23,463 |
-| 3 | 3+ regions, each carrying its share; doc 02 already includes a 1.25 duplication factor [A] | inside doc 02's $218,180 | consistent with 25%, likely low if 3 or more regions each keep warm capacity |
+| Rung | What the second region is | Added cost [E] |
+|---|---|---|
+| 1 | Warm standby: one box running the same binary read-only, its replica disk, plus a witness VM; on top of the two in-region serving boxes | [doc 13 section 8](13-cost-model.md#8-redundancy-levels-b-inputs), redundancy `xr` |
+| 2 | Active region: replicas for 6 shards, 2 edge nodes, 2 room nodes, extra fixed overhead | [doc 13 section 8](13-cost-model.md#8-redundancy-levels-b-inputs) (rung 2 column) |
+| 3 | 3+ regions, each carrying its share; doc 02 already includes a 1.25 duplication factor [A] | inside doc 02's rung 3 total (scenario D) | likely low if 3 or more regions each keep warm capacity; see [doc 13 section 8](13-cost-model.md#8-redundancy-levels-b-inputs) |
 
-Machine costs are doc 02's [A] unit figures; none were re-derived from a price page.
+Machine and region costs are owned by doc 13.
 
 ### 10.3 What it implies for free-tier limits
 
-- **No change to free-tier room counts.** Replication adds 275.5 KB per game (0.0003 GB); at a placeholder `p_x = $0.02/GB` [A] that is about $0.0055 per 1,000 games [E], against $1.15 per 1,000 total at rung 1 [E]. Features with real cost become paid: synchronous cross-region durability, reserved warm pools in two regions, residency pinning (smaller pools, idle capacity, L4 passthrough edges), always-warm placement. The costs are fixed machines, not bytes.
+- **No change to free-tier room counts.** Replication adds 275.5 KB per game (0.0003 GB); at a placeholder `p_x = $0.02/GB` [A] that is small next to the per-game total in [doc 13 section 8](13-cost-model.md#8-redundancy-levels-b-inputs) (doc 13 prices it at about $17 a month at 100,000 games a day [E]). Features with real cost become paid: synchronous cross-region durability, reserved warm pools in two regions, residency pinning (smaller pools, idle capacity, L4 passthrough edges), always-warm placement. The costs are fixed machines, not bytes.
 - **Free rooms** may ship at a 60 s interval [A] instead of about 1 s, saving requests, not bytes, and widening RPO to about a minute in a region loss [E] (owner to confirm, section 15).
-- **No second active region before demand pays for it:** the standby tax is 13.6% at rung 1 and 25.6% at rung 2 [E]; the visible gain (lower connect time for far players) starts only with an edge there, which is cheap (2 edges, $500 [E]).
+- **No second active region before demand pays for it:** the standby cost is in [doc 13 section 8](13-cost-model.md#8-redundancy-levels-b-inputs); the visible gain (lower connect time for far players) starts only with an edge there, which is cheap (2 edge nodes, doc 13 box ladder [E]).
 
 ---
 
@@ -508,7 +508,7 @@ Build the section 11 invariants and their simulator implementations: `Placement`
 | Clock offset measurement and server-chosen countdown (needed for single-region races too) | Residency pin: stored and validated, but only one jurisdiction exists, so EU pin requests are refused with a clear reason until an EU region exists |
 | Lag alarms (10 s warn, 60 s block auto), weekly restore drill, monthly promotion drill | Anycast, geo steering: single record with health checks |
 
-Rung 1 cost: about $470 per month on top of doc 02's rung 1 [E] (section 10.2). If the provider has no second zone for a sync standby, the cross-region async replica is the only second copy and RPO is seconds for all failures (section 15).
+Rung 1 cost: see [doc 13 section 8](13-cost-model.md#8-redundancy-levels-b-inputs) (section 10.2 here). If the provider has no second zone for a sync standby, the cross-region async replica is the only second copy and RPO is seconds for all failures (section 15).
 
 **Exit gates for rung 1 (additions to doc 02 Gate 1):**
 - **RG1.1 Promotion drill.** Kill region A (power-off equivalent) under 50k bot connections. Measure RPO (events lost relative to client journals) and RTO (time to first acked event in B). Targets: RTO under 15 min [A] manual, RPO equal to measured lag, **zero duplicate item effects** in the client model, 100% of lost-window checks recovered by journal replay or adoption.

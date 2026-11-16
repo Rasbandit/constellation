@@ -27,6 +27,7 @@ Internal drafts in [`docs/design/`](docs/design/), all proposed and not final. S
 - [`10-identity-and-room-ownership.md`](docs/design/10-identity-and-room-ownership.md): accounts, room roles, sign-in and recovery.
 - [`11-rust-socket-tier.md`](docs/design/11-rust-socket-tier.md): the all-Rust socket and room tier: shape, engineering rules, building blocks and spike plan.
 - [`12-start-small-ladder.md`](docs/design/12-start-small-ladder.md): the Stage 0 to Stage 3 start-small ladder below rung 1.
+- [`13-cost-model.md`](docs/design/13-cost-model.md): the single source for cost; at 100,000 games a day the estimated range is about $830 to $3,452 a month depending on scenario [E].
 - [`GLOSSARY.md`](docs/design/GLOSSARY.md): the terms used across the docs.
 - [`DECISIONS.md`](docs/design/DECISIONS.md): the decision log, including what is still open.
 

@@ -97,6 +97,8 @@ Internal draft, 2026-11-16, proposed and not final. One line per term, with the 
 |---|---|---|
 | rung | A capacity step (0 foundation, 1 to 3 by games per day) | 02 section 8 |
 | phase | A product roadmap period with kill criteria | 03 section 9 |
+| cost scenarios A to E | Five named what-if cost setups: A scrappy, B production-lite, C burst plus standby region, D doc 02's table, E multi-region. All numbers are estimates | 13 section 4 |
+| native fraction, cache hit rate | Share of games generated with native (not legacy) generation (`n`); share of generations served from cache (`h`). Both are cost inputs | 13 section 2, 02 section 5.0 |
 | load-test gate | Gate 0 to 3: a measured test a rung must pass | 02 section 8 |
 | gate S1 to S4 (launch gate) | Doc 04's security gates by users and games (D-05). Always written "gate S1" to "gate S4"; not the Stage 0 to 3 ladder, not doc 11's spikes | 04 section 11.0 |
 | Stage 0 to 3 | The start-small ladder below rung 1: one rented machine first, then a standby, then a generation host (D-79). Always written "Stage 0" to "Stage 3"; its own gates are G-ST0 to G-ST3. Doc 02's rungs begin where Stage 3 ends | 12 section 1 |

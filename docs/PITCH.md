@@ -155,7 +155,7 @@ We charge for the **service**, never for other people's game content. See legal 
 
 **We do not sell:** game files, patches, ROMs, or anything derived from a publisher's game. That is both a legal line and a trust line.
 
-Prices, margins and projections: **[TBD, needs customer interviews and a cost model].** The working plan names are in [`design/03-platform-and-ecosystem.md`](design/03-platform-and-ecosystem.md) section 7.2. Cost drivers we can already name: compute for generation, storage and egress for game data, and notifications.
+Prices, margins and projections: **[TBD, needs customer interviews; the cost model is [`design/13-cost-model.md`](design/13-cost-model.md), all estimates].** The working plan names are in [`design/03-platform-and-ecosystem.md`](design/03-platform-and-ecosystem.md) section 7.2. Cost drivers we can already name: compute for generation, storage and egress for game data, and notifications.
 
 ---
 
@@ -166,7 +166,7 @@ Prices, margins and projections: **[TBD, needs customer interviews and a cost mo
 3. **Generation as a service.** Sandboxed worker queue running existing games, with result caching and readable seeds.
 4. **The new standard.** Declarative game format, SDK, registry, test harness. *Milestone: one real game ported to the new format, with its settings chosen on the web or in a game that embeds the SDK.*
 5. **Studio pilot.** One studio ships a game with the SDK built in during development.
-6. **Scale and monetize.** Paid rooms, notifications, creator tools. We start small, on one inexpensive server (about $23 a month at first, about $93 once the public beta opens, estimates in doc 12), and grow in stages as use grows.
+6. **Scale and monetize.** Paid rooms, notifications, creator tools. We start small, on one inexpensive server (about $23 a month at first, about $93 once the public beta opens; estimates in doc 12, scenarios in doc 13), and grow in stages as use grows.
 
 ---
 

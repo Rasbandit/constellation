@@ -4,7 +4,7 @@ Status: internal design draft, 2026-11-16. Not for external use. Any external te
 
 Label rules (`CLAUDE.md`, doc 02 header): **[A]** estimated, an assumption the owner can change; **[E]** estimated, formula shown; **[C]** counted from a file or page we read; **[M]** cited, stated by a page we opened (listed below); **[?]** from memory, not verified. We have measured nothing. Every price is a list price, excludes VAT and taxes, and is converted at **1 EUR = $1.15 [A, not verified]**.
 
-Owner direction: doc 02's first rung (100,000 games per day, $3,452 a month [E: doc 02 section 5.10]) is too high a starting point. This doc designs the bottom of the ladder and reuses doc 02's inputs and formulas without restating them: `G, L, P, f, K, e, b, z, m_conn, m_room, r, g, s, h, n, s_nat, peak, hb` (doc 02 section 5.0). Doc 08's workload classes and crossovers, doc 06's invariants and doc 04's quotas and gates apply unchanged.
+Owner direction: doc 02's first rung (100,000 games per day, about $3.5k a month, scenario D in [doc 13](13-cost-model.md#5-results) [E]) is too high a starting point (rung 1 cost: scenario D in [doc 13](13-cost-model.md#5-results); the owned-box scenarios A to C there use the same prices as this doc). This doc designs the bottom of the ladder and reuses doc 02's inputs and formulas without restating them: `G, L, P, f, K, e, b, z, m_conn, m_room, r, g, s, h, n, s_nat, peak, hb` (doc 02 section 5.0). Doc 08's workload classes and crossovers, doc 06's invariants and doc 04's quotas and gates apply unchanged.
 
 **Naming.** "Stage 0" to "Stage 3" is this ladder (resolved 2026-11-16: it was first drafted as S0 to S3, which clashed with doc 04's launch gates). Doc 04's launch gates are always written "gate S1" to "gate S4" (D-05). Doc 12's own gates are G-ST0 to G-ST3, and its triggers are TR1 to TR4 (doc 11 owns T1 to T8). Doc 02's "rung 0" is the build phase (weeks 1 to 8), not a capacity level; we do not renumber it. Doc 02's rungs begin where Stage 3 ends.
 
@@ -24,7 +24,7 @@ Not opened (everything about them is [?]): Sentry (pricing page failed to load, 
 
 ## 0. Verdict in one page
 
-1. **Start on one rented machine and treat doc 02's rung 1 as a destination, not a launch requirement.** Stage 0 is about $23 a month [E], Stage 1 about $93 [E] (about $105 with an optional log-shipping VPS), Stage 2 about $300, Stage 3 about $1,000. Unit cost per 1,000 games lands between $0.5 and $1.6 at every stage once the box is busy [E, section 6], close to doc 02's $1.15, because rented hardware is cheap and the real cost is the fixed monthly floor.
+1. **Start on one rented machine and treat doc 02's rung 1 as a destination, not a launch requirement.** Stage 0 is about $23 a month [E], Stage 1 about $93 [E] (about $105 with an optional log-shipping VPS), Stage 2 about $300, Stage 3 about $1,000. Unit cost per 1,000 games lands between $0.5 and $1.6 at every stage once the box is busy [E, section 6], comparable to scenario D at rung 1 in [doc 13](13-cost-model.md#5-results), because rented hardware is cheap and the real cost is the fixed monthly floor.
 2. **The $100 box is a Hetzner AX42** (8 cores, 16 threads, 64 GB ECC RAM, 2 x 512 GB NVMe, 1 Gbit/s port, unlimited traffic [M]) at EUR 79 to 99 a month, about $91 to $114 [E]. Postgres, the Rust binary and the Python sidecar share it. Fallback if the price column lands at EUR 99: AX41 at EUR 59 (about $68) [M].
 3. **First bottleneck: legacy-Python generation CPU, not connections, not Postgres.** With 4 cores held for generation at 60% utilization, the box sustains about 5,900 games per day at 30 CPU-seconds per game and about 59,000 per day for native worlds [E, section 3]. Connections at that load are about 4,400 and need about 140 MB of RAM [E]. Metric that reveals it: `queue_wait_p95` above 30 s (doc 02 SLO) and generation cgroup CPU above 60% for 3 days.
 4. **Honest promises.** At Stage 0 and Stage 1 the single box is a single point of failure. We promise best effort, a target restore time of a few hours [A], and we waive doc 02's RPO 0 for acked events: acked events from the last 1 to 2 minutes can be lost on total box loss [E, WAL archive interval]. Everything else in doc 02 (cursors, idempotency, fencing, per-room order) holds from the first commit.
@@ -81,7 +81,7 @@ All prices are list prices from the pages named in the header, excl. VAT. The EU
 | Hetzner AX41 | Ryzen 5 3600, 6 cores, 64 GB DDR4 non-ECC, 2 x 512 GB NVMe [M] | unlimited, 1 Gbit/s | EUR 59, setup EUR 0 [M] | $68 | Fallback if AX42 lands at EUR 99. |
 | Hetzner AX102 | Ryzen 9 7950X3D, 16 cores, 128 GB DDR5 ECC [M] | unlimited | EUR 159 to 259, setup EUR 129 [M] | $183 to $298 | Stage 2 primary. |
 | Hetzner AX162 | EPYC 9454P, 48 cores, 128 GB to 512 GB DDR5 ECC [M] | unlimited | EUR 319 to 614, setup EUR 304 [M] | $367 to $706 | Stage 3 generation host. |
-| Hetzner Cloud CPX22 | 2 shared vCPU AMD, 4 GB, 80 GB [M] | 20 TB in EU, 1 TB in the U.S. [M] | EUR 16.99 [M] | $19.50 | Stage 0 box. Minutes to create by API [M]. |
+| Hetzner Cloud CPX22 | 2 shared vCPU AMD, 4 GB, 80 GB [M] | 20 TB in EU, 1 TB in the U.S. [M] | EUR 16.99 [M] | $19.50 | Stage 0 box. Minutes to create by API [M]. EUR 16.99 is the HEL1 price; NBG1 is EUR 19.99 [M, doc 13 section 1](13-cost-model.md#1-prices-opened-for-this-doc). |
 | Hetzner Cloud CPX32 / CCX33 | 4 shared vCPU 8 GB EUR 30.49 / 8 dedicated vCPU 32 GB 240 GB NVMe EUR 117.99 [M] | as above | as listed | $35 / $136 | CCX33 is the emergency restore target (section 4.6). |
 | OVHcloud RISE-S | Ryzen 7 9700X, 8 cores / 16 threads, 64 GB, 2 x 512 GB, 1 Gbps public [M] | not stated on the page we read | $77 per month, install fee $77 [M] | $77 | Cheapest 8-core we found; traffic terms not verified; RISE-1 (Xeon-E 2386G, 6 cores, from $64) and RISE-2 (8 cores, from $72) also listed [M]. |
 | Fly.io Machines | `shared-cpu-2x` 2 GB $13.39; `performance-2x` 4 GB $66; extra RAM $6 per GB per month [M] | $0.02 per GB out, inbound free [M] | per second, no free tier; bills under $5 waived [M] | 32 GB at 2 performance vCPU: $66 + 28 * $6 = $234 [E] | Good for the witness ($2.19 [M]) and for per-job generation, not for the main box. Managed Postgres Basic is $38 [M]. |
@@ -413,9 +413,9 @@ Formula: `cost per 1,000 games = monthly cost / (G * 30 / 1000)`.
 | Stage 1 | $93 | $1.55 (2,000/day) | $0.52 (5,908/day) | |
 | Stage 2 | $300 | $0.97 (10,000/day) | $0.68 (14,769/day, $300 at 10 cores) | |
 | Stage 3 | $1,000 | $1.11 (30,000/day) | $0.56 (59,077/day) | |
-| Rung 1 | $3,452 | | | **$1.15** at 100,000/day; rungs 2 and 3 are $0.78 and $0.73 [E: doc 02 section 5.10] |
+| Rung 1 | scenario D, see [doc 13 section 5](13-cost-model.md#5-results) | | | per-1,000 figures at 100,000/day and above are in doc 13 [E] |
 
-Reading: **a mostly idle stage costs more per game, a busy stage costs less than doc 02's rung 1** [E]. The stage figures are lower than rung 1 because rented bare metal is cheaper than doc 02's $450 box [A], there is no $500 fixed line, no 2.0 overhead multiplier on generation and no redundancy bill at Stage 0 and Stage 1. That is not a claim that rung 1 is overpriced: rung 1 buys a second region and a pool. Do not publish unit prices before Gate 2 item 7 (doc 02 risk 8).
+Reading: **a mostly idle stage costs more per game, a busy stage costs less than doc 02's rung 1 (scenario D)** [E]. The stage figures are lower than rung 1 because rented bare metal is cheaper than doc 02's $450 box [A], there is no $500 fixed line, no 2.0 overhead multiplier on generation and no redundancy bill at Stage 0 and Stage 1. That is not a claim that rung 1 is overpriced: rung 1 buys a second region and a pool. Do not publish unit prices before Gate 2 item 7 (doc 02 risk 8).
 
 ---
 ## 7. The ladder plan
@@ -426,7 +426,7 @@ flowchart TD
   ST1["Stage 1 public beta, about $93<br/>AX42, sidecar on box, WAL to bucket, up to 2,000 games/day"]
   ST2["Stage 2 open beta, about $300<br/>AX102 plus standby AX41, witness, paid rooms, up to 10,000 games/day"]
   ST3["Stage 3 studio pilots, about $1,000<br/>primary plus standby plus generation host AX162, up to 30,000 games/day"]
-  R1["Rung 1 (doc 02), about $3.4k<br/>100,000 games/day, edge/room split, second region"]
+  R1["Rung 1 (doc 02), cost in doc 13<br/>100,000 games/day, edge/room split, second region"]
   ST0 -->|"TR1: 500 games/day or first non-friend"| ST1
   ST1 -->|"TR2: 3,000 games/day, first paid room"| ST2
   ST2 -->|"TR3: 7,500 games/day or first studio"| ST3
@@ -512,7 +512,7 @@ Before the first public user (Stage 1): everything above on the AX42, plus doc 0
 
 **Doc 06 (`06-multi-region.md`)**
 - Section 11: add a column "Stage 0 and Stage 1 status" with the table in doc 12 section 4.5 (13 stubbed, 15 partial).
-- Section 10.2: add Stage 2 as a "standby for about $68 (AX41, [M])" row next to the $470 estimate; flag that doc 02's $450 per box is an [A].
+- Section 10.2: add Stage 2 as a "standby for about $68 (AX41, [M])" row next to the second-region estimate in doc 13 section 8; flag that doc 02's $450 per box is an [A].
 - Section 12 rung 1: add "Stage 0 to Stage 2 precede this; the Authority and witness arrive at Stage 2 (witness) and rung 1 (full)".
 - Section 15 / D-65: narrow the question to "when does the second region start (default Stage 2, manual promotion)".
 

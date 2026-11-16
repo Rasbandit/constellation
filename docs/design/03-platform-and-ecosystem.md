@@ -299,7 +299,7 @@ Find them through the first ten communities, engine ecosystem forums, jam winner
 
 ### 7.2 Plans
 
-Prices follow the cost model in doc 02 section 5.10 and the hosting rule of doc 10 (hosting needs an account, D-63 open; guests join but cannot create, D-23). Quota numbers live in one `config` module and one table in doc 04 section 9.
+Prices follow the cost model in [doc 13](13-cost-model.md#9-break-even) and the hosting rule of doc 10 (hosting needs an account, D-63 open; guests join but cannot create, D-23). Quota numbers live in one `config` module and one table in doc 04 section 9.
 
 | Plan | Who | Price form | Includes | Hypothesis |
 |------|-----|------------|----------|------------|
@@ -335,9 +335,9 @@ Capacity and cost inputs (generation time, compute price, generations per game, 
 | Notification cost per message | `c_msg` | Varies by channel (web push, email, Discord, webhook); push near zero | Provider price list at launch |
 | Free-to-paid conversion | `k` | Unknown; do not plan on a number | Cohort tracking in Phase 2 |
 
-- Host-plan price: `P_host = (C_infra_per_host + C_support_per_host) / (1 - m)`; with a 0.7 target gross margin `m`, price is cost divided by 0.3 (estimated). Size cost first, then set price; do not set price from competitors. `C_infra_per_host` comes from doc 02 section 5.10.
+- Host-plan price: `P_host = (C_infra_per_host + C_support_per_host) / (1 - m)`; with a 0.7 target gross margin `m`, price is cost divided by 0.3 (estimated). Size cost first, then set price; do not set price from competitors. `C_infra_per_host` comes from [doc 13](13-cost-model.md#9-break-even).
 - Studio-plan base: `X = (C_serve(MAU_inc) + hours_support x rate_support + cert_review_hours x rate_review) / (1 - m_studio)`, with `m_studio = 0.6` as the starting hypothesis.
-- Compute is probably not the hard cost; support, moderation and abuse are (inferred from doc 02 section 5.10; re-check when that model changes).
+- Compute is probably not the hard cost; support, moderation and abuse are (inferred from [doc 13](13-cost-model.md#5-results); re-check when that model changes).
 
 **Market-size method (no number asserted).** We do not know how many people play multiworld randomizers or would pay. Measure in this order:
 1. **Floor (counted):** unique accounts and rooms on our own service after Phase 1.
@@ -351,7 +351,7 @@ Spend is estimated by method, not promised. Replace the team assumption with rea
 
 | Stage | Months | Team (estimated) | What it needs | Funded by | Break-even test |
 |-------|--------|------------------|---------------|-----------|-----------------|
-| **0 Prove** | 0 to 6 | 2 to 3 builders, part-time lawyer and design | Small cloud spend (doc 02 section 5.10), lawyer review of the legal notes, trademark search | Founders or a small grant; no outside money if the team is unpaid | None. Gate is demo plus 10 communities |
+| **0 Prove** | 0 to 6 | 2 to 3 builders, part-time lawyer and design | Small cloud spend ([doc 13](13-cost-model.md#5-results) scenarios A and B), lawyer review of the legal notes, trademark search | Founders or a small grant; no outside money if the team is unpaid | None. Gate is demo plus 10 communities |
 | **1 Launch** | 6 to 18 | 4 to 6 including a community lead and part-time support | Cloud scales with players; moderation hours; first studio contracts | Seed funding or revenue-based financing sized `runway_months x monthly_burn`, at least 18 months; pilot fees offset | Host and event revenue covers cloud and support |
 | **2 Grow** | 18 to 36 | 8 to 12 including a studio solutions engineer | SDK in more engines, certification, localization, payments and tax setup | Series A scale funding only if the studio pipeline justifies it; else revenue-funded | Studio licenses cover studio-team payroll |
 | **3 Standard** | 36+ | Foundation program lead plus company team | Foundation costs, conformance suite maintenance, partner program | Revenue, with a neutral fund for the spec | Company profitable without the foundation |

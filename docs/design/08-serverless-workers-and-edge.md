@@ -94,7 +94,7 @@ Results per month [E]:
 | | Rung 1 (100k games/day) | Rung 2 (1M) | Rung 3 (10M) |
 |---|---|---|---|
 | Concurrent connections `C` | 75k | 750k | 7.5M |
-| Persistent Rust, all-in (doc 02 serving + DB) | $900 | $7,800 | $68,100 |
+| Persistent Rust, all-in | see [doc 13](13-cost-model.md#5-results): scenario D serving line, or scenarios A to C for owned boxes | same | same |
 | Persistent Rust, sockets only, Fly-class | $180 | $810 | $6,840 |
 | API Gateway connection minutes | $810 | $8,100 | $81,000 |
 | API Gateway messages | $14,625 | $146,250 | $1,462,500 |
@@ -180,7 +180,7 @@ sequenceDiagram
 
 Day one is one small server (binary with Postgres, object store and in-process job runner, CDN in front); rung 3 splits roles into a gateway fleet and room pools per region, Postgres shards, a queue service feeding functions (notify, webhooks, scheduled), container jobs (packaging) and an owned Firecracker pool with microVM burst. Roles split and adapters are added with no rewrite.
 
-Day-one deployment [A]: one VM (about $40 to $100 per month, scaling to doc 02's $450 box), one Postgres on it (or a small managed instance), one S3-compatible bucket, one CDN, backups to the bucket. The binary runs `--roles=all`: gateway, native edge, compat edge, room runtime, API, notify, `Job` runner. Legacy-Python generation differs from doc 02 only in placement: vetted worlds run on a gVisor pool (doc 04 D1, D-04) and doc 02's "separate burstable generation pool from day one" may be rented per job (4.4) instead of owned; this is an option to validate at gate 1.
+Day-one deployment [A]: one VM (about $40 to $100 per month, scaling to the box ladder in [doc 13 section 1](13-cost-model.md#1-prices-opened-for-this-doc)), one Postgres on it (or a small managed instance), one S3-compatible bucket, one CDN, backups to the bucket. The binary runs `--roles=all`: gateway, native edge, compat edge, room runtime, API, notify, `Job` runner. Legacy-Python generation differs from doc 02 only in placement: vetted worlds run on a gVisor pool (doc 04 D1, D-04) and doc 02's "separate burstable generation pool from day one" may be rented per job (4.4) instead of owned; this is an option to validate at gate 1.
 
 | Port (trait) | Day-one adapter | Later adapters |
 |---|---|---|
@@ -250,11 +250,11 @@ Doc 02 baseline: `cost = g*(1-h)*s_eff/3600*c_core*ovh`; per run `30 s / 3600 * 
 | Cloud Run job, 1 vCPU 1 GiB | `30*($0.000018 + $0.000002)`; jobs bill at least 1 minute [M] | $0.00066 at 30 s, **$0.00132** at the minimum | Rate-column caveat in 2.2. A container, not a microVM. |
 | Fly Machine performance-1x 2 GB | `$33/month / 2.592e6 s * 30 s` | $0.00038 | Prorated from monthly price; per-second billing of started time stated [M]; microVM boundary and egress control not verified [?]. |
 
-Rung-1 volume: `G*g*(1-h)*30 = 1e5*1.3*0.9*30 = 3.51M generations per month` [E, doc 02 inputs]. Monthly: owned $1,755 (doc 02 shows $1,779, a rounding difference from core counts); Lambda event $3,106; Lambda MicroVM $14,602; Fly performance-1x $1,340 [E].
+Rung-1 volume: `G*g*(1-h)*30 = 1e5*1.3*0.9*30 = 3.51M generations per month` [E, doc 02 inputs]. Monthly: owned $1,755 (doc 13's scenario D shows $1,779: 720 versus 730 hours in a month, [doc 13 section 3.2](13-cost-model.md#3-formulas)); Lambda event $3,106; Lambda MicroVM $14,602; Fly performance-1x $1,340 [E].
 
 **Crossovers.**
-- *Utilization.* An owned core costs `$0.03 / u` per useful hour at utilization `u`. Lambda functions cost `1.769 GB * 3600 * $0.0000166667 = $0.106` per vCPU-hour [E]; break-even `u = 28%`. MicroVM: `3600*($0.0000276944 + 2*$0.0000036667) = $0.126` per vCPU-hour before snapshot reads; `u = 24%`. Doc 02 says peak is 5x average [A], so a fleet sized for peak runs near 20% average utilization and loses to functions; a fleet sized for average and fed by functions at peak wins. **Rule: own capacity for the sustained base, rent for bursts above it.**
-- *Fixed pool versus per-job rental at low volume.* A per-job microVM at $0.0042 beats an owned box at $450 per month [A: doc 02] below `$450 / $0.0042 = 107k` generations per month, about 3,100 games per day with `g=1.3, h=0.1` [E]; against a $100 box, 24k per month (about 800 per day). Until about 3,000 games per day renting is cheaper than owning, and owning costs engineering time we have not spent.
+- *Utilization.* An owned core costs `$0.03 / u` per useful hour at utilization `u`. Lambda functions cost `1.769 GB * 3600 * $0.0000166667 = $0.106` per vCPU-hour [E]; break-even `u = 28%` at doc 02's $0.03; at doc 13's owned $0.0105 per core-hour it is about 10% ([doc 13 section 11](13-cost-model.md#11-reconciliation-with-docs-02-03-06-08-and-12)) [E]. MicroVM: `3600*($0.0000276944 + 2*$0.0000036667) = $0.126` per vCPU-hour before snapshot reads; `u = 24%`. Doc 02 says peak is 5x average [A], so a fleet sized for peak runs near 20% average utilization and loses to functions; a fleet sized for average and fed by functions at peak wins. **Rule: own capacity for the sustained base, rent for bursts above it.**
+- *Fixed pool versus per-job rental at low volume.* A per-job microVM at $0.0042 beats an owned box at $450 per month [A: doc 02] below `$450 / $0.0042 = 107k` generations per month, about 3,100 games per day with `g=1.3, h=0.1` [E, doc 02's $450 box]; against a $100 box, 24k per month (about 800 per day). Doc 13 recomputes this with owned prices: against an AX42 ($91) renting wins below about 620 games per day [E]. Below roughly 600 to 3,000 games per day (depending on the box) renting is cheaper than owning, and owning costs engineering time we have not spent.
 
 ### 4.5 Cold starts for the legacy Python sidecar, limits, warm pools
 
@@ -429,4 +429,4 @@ Owner decisions for D-70 and D-09 (UI framework), D-65 (rung 1 warm standby) and
 3. **Vendor terms.** Do serverless and edge vendors permit running user-submitted world code (legacy lanes) on their platforms? Not verified; a lawyer and vendor read is needed before relying on it.
 4. **DO connection cap.** The per-object WebSocket cap and cross-region behavior were not on the pages we opened; needed only for large public rooms on that adapter.
 5. **Real `lambda`.** Events per connected slot per day decides the W1 versus W2 economics (2.5, crossover 2,400).
-6. **Egress and CDN bandwidth prices** were not opened and could dominate web cost; doc 02's $0.02 per GB is [A].
+6. **Egress and CDN bandwidth prices** were not opened and could dominate web cost; doc 02's $0.02 per GB is [A]. Partly answered since: dedicated Hetzner and OVH traffic is unmetered [M, [doc 13 section 1](13-cost-model.md#1-prices-opened-for-this-doc)]; [doc 13 section 10](13-cost-model.md#10-sensitivity) tests egress at $0.09 per GB.
