@@ -253,6 +253,16 @@ Not a spike; a CI gate on the library choice, run before `edge-native` is commit
 - **Supply chain:** pin a git commit or 0.5.1 or later (not crates.io 0.5.0), vendor it, `cargo-deny` and fuzz targets (the repo has `fuzz/`), and the licence call in doc 05 section 21 (MPL-2.0).
 - **Fail:** switch to `soketto` (same gate, plus its browser corrupt-stream report, soketto issue 49), or ship without compression and accept the warning, whichever the owner picks.
 
+### 4.8 Gate G-DB: log writer and Postgres layer (D-98)
+
+CI gates on the `LogStore` writer, run before the log is relied on. Evidence: agent read of sqlx, tokio-postgres, diesel, sea-orm sources and issues, 2026-11-16 (doc 05 section 5 row).
+
+- **Cancel safety.** Cancel `commit()` at random points, then run the next batch on the same pool; assert no statement-order errors. The writer runs in a detached task, never inside `select!`, and drops the connection on any error (sqlx issue 2805).
+- **Throughput.** Fenced-batch microbenchmark on a laptop-sized Postgres: 1,000 rooms, 20 ms windows, sqlx `UNNEST` and `COPY` into a temp table. Fail below 60 percent of the 20k rows per second design value [A]; the fallback is `tokio-postgres` behind the same trait.
+- **Pooler.** The writer behind PgBouncer in transaction mode with prepared-statement support on; the PgBouncer version that added it is not verified.
+- **Fence race.** A sim test that bumps the epoch concurrently with a batch; a fenced writer must never commit.
+- **Pin.** `cargo-deny` pin; sqlx main has fixes 0.9.0 lacks (issue 4495), so decide on 0.9.0 plus workarounds or a git pin.
+
 ## 5. Risks and unknowns
 
 ### 5.1 Things note 04 could not find
