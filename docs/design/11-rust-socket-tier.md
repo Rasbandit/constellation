@@ -19,6 +19,8 @@ Labels: **[M]** measured by the cited author on their hardware (not by us); **[C
 
 ### 1.1 What it is
 
+> **Update (D-99, owner decision 2026-11-16): start as one process.** The two-process shape below is deferred until a spike or real load shows a need (S2 and S3 are the evidence); keep the `RoomLink` seam so the split stays a swap. Panic and cancellation isolation (R2, R5) then rely on task boundaries inside one process, which S3 must prove.
+
 Today docs 02 and 05 run one binary with roles `all` on day one and split the edge first (doc 02 section 3.3, doc 05 section 14.1). The proposal: from rung 1, run two OS processes from the same codebase, an **edge process** (TLS, WebSockets, sessions, heartbeats, soft presence, `edge-native`, `edge-compat`) and a **room runtime process** (room actors, log writer, leases), joined by the mux protocol over a local connection (loopback or a Unix socket). It uses the seam doc 02 D6 and doc 05 section 7.3 (`RoomLink`) already define. It is reversible: collapse back to one process by swapping the link for an in-process channel.
 
 ```mermaid
@@ -132,7 +134,7 @@ Write these into doc 05 section 17 (we do not edit it here). Each has an enforce
 | R7 | Poison-task and panic-in-apply tests | CI |
 | R8 | Metrics, admin room list, flight recorder, tokio-console | dashboards per rung gate (doc 02 section 6.3) |
 | R9 | Counting allocator, per-connection memory test | S1, CI |
-| R10 | Two-process shape (proposed, D-92) | S2, S3 |
+| R10 | Two-process shape (deferred, D-92 and D-99) | S2, S3 |
 
 ---
 
