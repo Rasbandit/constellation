@@ -2,7 +2,7 @@
 
 > Internal draft, 2026-11-16. Working name: Constellation. "proposed" is a recommended default the owner authorized us to apply so the docs agree; none is final. "open" needs the owner's business or product judgement. "needs-lawyer" needs counsel before it is decided or published. Not reviewed by a different agent or a human; under `CLAUDE.md` nothing here leaves this repo until that happens. This repo contains our own writing, with citations, and no Archipelago source code, text or assets.
 
-**How to read it.** Part A is the owner's direction. Part B resolves the 38 contradictions from the first overview (old check number shown). Part C is the register of open and lawyer items. Part D holds the decisions added when the docs were merged (D-60 to D-72, then D-79 to D-92 from docs 11 and 12, D-93 to D-96 from doc 13, D-97 to D-100 from the library and first-milestone choices, D-101 to D-122 from docs 14 and 15). Reading order and doc summaries: [`README.md`](README.md). Terms: [`GLOSSARY.md`](GLOSSARY.md). Docs 00 to 13 are all written; rows below name the docs they changed.
+**How to read it.** Part A is the owner's direction. Part B resolves the 38 contradictions from the first overview (old check number shown). Part C is the register of open and lawyer items. Part D holds the decisions added when the docs were merged (D-60 to D-72, then D-79 to D-92 from docs 11 and 12, D-93 to D-96 from doc 13, D-97 to D-100 from the library and first-milestone choices, D-101 to D-122 from docs 14 and 15, D-123 from the CWP envelope proposal). Reading order and doc summaries: [`README.md`](README.md). Terms: [`GLOSSARY.md`](GLOSSARY.md). Docs 00 to 13 are all written; rows below name the docs they changed.
 
 **Number labels.** Every number is an estimate or a design value unless it says counted or measured. We have measured nothing.
 
@@ -101,7 +101,7 @@ All keep their recommended default from the old register, but none is decided. S
 
 Register items D7, D8, D9, D10, D11, D13, D16, D18, D21, D29 are covered by D-03, D-02, D-04, D-04/D-05 (generation pool stays separate), D-07, D-06, D-27, D-23, D-08, D-05.
 
-## Part D. Decisions added during the doc merge (D-60 to D-72, D-79 to D-122)
+## Part D. Decisions added during the doc merge (D-60 to D-72, D-79 to D-123)
 
 Each row says where the rule is owned. "proposed" rows were picked by the cleanup plan where two docs disagreed; "open" rows need the owner.
 
@@ -164,3 +164,4 @@ Each row says where the rule is owned. "proposed" rows were picked by the cleanu
 | D-120 | **Plain-language lint rules and the jargon list are publish gates (errors block, warnings show)** | proposed | Quality at the source (doc 15). | 07, registry, 15 | Registry publish |
 | D-121 | **Unknown options and room-level keys in a player file are errors with plain messages, never a silent default** | proposed | A typo must not change a game silently (doc 15). | 01 D2.3, 15 | Validator |
 | D-122 | **Legacy import and export tables per world, with a `legacy:` passthrough block for sidecar worlds** | proposed | Files keep working in both directions (doc 15). | 01 section 3.8, 15 | Compat milestone |
+| D-123 | **CWP frames: one envelope (`hello`, `cmd`, `get`, `watch`, `ack`, `ping`; `welcome`, `result`, `event`, `error`), every feature a registered type (core bare names, extensions `<id>/<name>`), durable or ephemeral declared per event type, readable state as watchable paths, name tables at content-addressed HTTP URLs, typed `want` and role from the token scope** | proposed (2026-11-17) | New features become registry entries (a schema and a message template) instead of new frames in every SDK; one result per `cid` makes retries testable; the compat edge maps each Archipelago packet onto one form (doc 01 D1.10). | 01 D1.3, D1.4, D1.9, D1.10 | Server issue #12 (CWP v1 schema), edge-native |

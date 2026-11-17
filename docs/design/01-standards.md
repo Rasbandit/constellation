@@ -148,6 +148,64 @@ Initial standard extensions: `org.cwp.deathlink`, `org.cwp.energylink`, `org.cwp
 
 **Why.** The notes record that DeathLink today is a client convention over generic relay packets with no server code (from the notes). That is flexible but has no schema, negotiation, or server-enforced rate limits and permissions; typed extensions add all three and keep relay-by-default. **Rejected.** Hard-coding every feature in core (bloat). An untyped "custom event" bag (the status quo problem). Arbitrary server plug-ins in the standard (not portable; server semantics only through a specified extension).
 
+#### D1.10 One envelope, two delivery classes, state paths and a type registry (proposed, D-123)
+**Status.** Proposed 2026-11-17, not yet accepted by the owner. If accepted it replaces the per-feature frames sketched in D1.3, D1.4 and D1.9 with the generic frames below. The concepts of those decisions (capabilities, one log with `seq`, one ack, `cid` dedupe, typed extensions with relay by default) are unchanged; only their wire shape changes.
+
+**Choice.** CWP has a fixed set of frame kinds, each with one shape, and every feature (core or extension) is a registered *type* carried inside them. Adding a feature adds a registry entry, never a frame kind.
+
+| Frame (`op`) | Direction | Shape | Answer |
+|---|---|---|---|
+| `hello` | client to server | `{proto, token, exts, want, resume?}` | `welcome` or `error` |
+| `cmd` | client to server | `{cid, type, data}` | exactly one `result` with the same `cid` |
+| `get` | client to server | `{cid, path}` | `result` with `{path, value, ver}` |
+| `watch` | client to server | `{cid, paths}` | `result`, then `state.changed` events |
+| `ack` | client to server | `{applied}` (the slot's `item_seq`) | none |
+| `ping` / `pong` | both | `{}` | `pong` |
+| `welcome` | server to client | `{proto, exts, limits, epoch, head, slot, role, names}` | |
+| `result` | server to client | `{cid, ok}` or `{cid, error}` | |
+| `event` | server to client | `{seq?, type, slot?, data}` | |
+| `error` | server to client | the D1.7 error shape, for a frame with no usable `cid` | |
+
+Example exchange:
+
+```json
+{"op":"cmd","cid":"c-17","type":"check","data":{"location":104}}
+{"op":"result","cid":"c-17","ok":{}}
+{"op":"event","seq":2201,"type":"item.grant","slot":3,"data":{"item":7,"from":1,"location":104,"item_seq":12}}
+{"op":"event","type":"org.cwp.deathlink/death","data":{"from":2,"cause":"fell in a pit"}}
+```
+
+1. **Type names.** Core types are bare lower-case dotted names (`check`, `goal`, `item.grant`). Extension types are `<extension id>/<name>` (`org.cwp.deathlink/death`). A slash means "extension"; the extension must be enabled in `hello` for the server to accept or send it. This replaces D1.9's `{"op":"ext"}` frame and the `ext.<id>.<type>` event names.
+2. **Every command gets one result.** A `cmd` or `get` is answered by exactly one `result` carrying its `cid`, success or failure. Errors inside a result use the D1.7 shape. A repeated `cid` gets the first result again (D1.4 dedupe).
+3. **Two delivery classes, declared per event type.** A *durable* event is appended to the log, carries `seq`, is replayed on resume and counts for `head`. An *ephemeral* event has no `seq`, is never stored, and may be dropped for a session whose queue is full (doc 11 R3). The registry entry says which; a server never decides it case by case.
+4. **State paths.** Readable room state is one tree of paths, read with `get` and followed with `watch`:
+
+   | Path | Holds |
+   |---|---|
+   | `room/info` | seed name, room settings, permissions, limits |
+   | `room/slots` | every slot: number, name, alias, game, kind, group members |
+   | `slot/{n}/status` | connected, ready, playing, goal |
+   | `slot/{n}/inventory` | items granted to the slot, in `item_seq` order |
+   | `slot/{n}/hints` | hints for the slot |
+   | `game/{id}/names` | the game's name tables (fallback for the HTTP form below) |
+   | `kv/{scope}/{key}` | shared storage (`org.cwp.kv`) |
+   | `ext/{extension id}/...` | state an extension declares |
+
+   Every value carries a version `ver` (the `seq` that last changed it, or 0). A change to a watched path arrives as the ephemeral event `state.changed {path, value, ver}`; after a reconnect the client calls `get` again instead of replaying them. Permissions attach to path prefixes: `slot/{n}/*` is writable only through that slot's commands, `room/*` only through room roles (doc 10), `ext/{id}/*` per that extension's `perms.json`.
+5. **Name tables over HTTP.** A game's name tables are served at a content-addressed URL, `GET /games/{game id}/names/{checksum}.json`, cacheable forever. `welcome.names` maps each game in the room to its checksum. `get game/{id}/names` is the fallback for clients with no HTTP client.
+6. **Explicit wants, role from the token.** `hello.want` is a typed object, `{"items": {"from_others": true, "own": true, "starting": true}, "slot_data": true}`, not a bit field or free-form tags. Whether a session may send checks comes from its token's scope (`play` or `observe`, D1.2), reported back as `welcome.role`, never from a tag the client declares.
+7. **One registry is the source of truth.** Each type has an entry: `type`, `kind` (`cmd` or `event`), `delivery` (events), a JSON Schema for `data`, the scopes or roles that may send it, `status` (experimental, stable, deprecated, D1.8) and, for events shown to people, a message template with placeholders (`"{from} sent {item} to {to}"`, localized per D2.4). SDK types, the conformance tests (bad payload, repeated `cid`, permission denied, for every command) and the compat edge's mapping tables are generated from it. Servers send typed events only; human text is rendered by clients from the templates.
+
+**Mapping for the compatibility adapter (3.8).** Each documented Archipelago packet (their `docs/network protocol.md`, main branch, read 2026-11-17) maps onto one of these forms: `LocationChecks` to `cmd check`; `StatusUpdate` to `cmd goal` or `cmd status`; `Say` to `cmd chat.say`; `Set` to `cmd org.cwp.kv/set`; `Get` and the read-only `_read_*` keys to `get` on the matching path (for example `_read_client_status_{team}_{slot}` to `slot/{slot}/status`); `SetNotify` to `watch`; `GetDataPackage` to `game/{id}/names`; `Bounce` with the DeathLink tag to `org.cwp.deathlink/death`, other bounces to `org.cwp.legacy_bounce/bounce`; `PrintJSON` is rendered by the edge from typed events and the templates.
+
+**Why.** Archipelago's protocol has a separate packet, with its own shape and reply rule, per feature, and exposes state through several unrelated mechanisms (connect fields, partial room updates, read-only key names that encode team and slot, a data package request) (their protocol document, as above). Each new feature there means a new packet in every client library. With a fixed envelope, a client library is written once and new features are data: a schema and a template. Uniform results make retries safe and testable; declared delivery classes keep extension authors from guessing what survives a reconnect; content-addressed name tables take the largest message off the room socket (the name tables are about 99% of one sampled seed's text, `docs/notes/01-archipelago-findings.md`, one sample); the transports of D1.5 become thin wrappers of the same frames (`POST /cmd` carries a `cmd`, `GET /state/{path}` is a `get`).
+
+**Costs.** A generic `cmd` moves checking of `data` from frame parsing to schema validation, so the registry and its generated types must exist before the first extension ships. State paths are only as safe as the registry that lists them; an unlisted path is refused, never served. Name tables over HTTP add a dependency on the web host for a client's first join, covered by the socket fallback.
+
+**Rejected.** (a) One frame kind per feature (the D1.9 sketch): every feature touches every SDK. (b) A single untyped "message" frame: no schema, no permissions. (c) Server-rendered text: blocks localization and new event types need server changes. (d) gRPC or protobuf services: second schema language (D1.6).
+
+**Considered next, not decided here.** A small `org.cwp.kv` operation set with a compare-and-set guard (`if_ver`) instead of many arithmetic operations; relay extensions as topics with an optional `to: [slots]` instead of match expressions; accepting a location name as well as an id in `check`; room-role actions (release for others, kick, pause) on the web console's HTTP API rather than the game socket.
+
 ### 3.2 Game Manifest (CGM)
 #### D2.1 Format and layering
 **Choice.** The canonical manifest is **JSON** validated by a JSON Schema (2020-12). Authors write YAML or JSON in the strict authoring profile (doc 07 section 4); `cgm build` produces canonical JSON (keys sorted, no duplicate keys, UTF-8 NFC, integers only). The **manifest hash** is SHA-256 of the canonical bytes, and a generator reads only canonical JSON plus the ledger (doc 07 sections 3.2 and 4.1). Package layout:
