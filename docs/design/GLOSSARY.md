@@ -33,7 +33,7 @@ Internal draft, 2026-11-16, proposed and not final. One line per term, with the 
 | join link | `https://{host}/j/{room_key}#{invite_secret}`; per-slot and spectator links are named variants | 09 section 4.2 |
 | seq | Room-wide event log position, gapless | 01 D1.4 |
 | item_seq | Per-slot delivery index derived from the log, carried on item events | 01 D1.4 |
-| item_uid | Stable item identity, `H(room, from, location, receiver)` for location-based grants (`H(room, source, receiver, n)` otherwise), the same across epochs | 01 D1.4, D1.10 rule 11, 06 section 11 |
+| item_uid | Stable item identity, `H(room, from, location, receiver)` for location-based grants (`H(room, start, receiver, n)` for starting items, `H(room, admin, receiver, caller, cid)` for grants by a room role; SHA-256 over a canonical JSON array, first 128 bits), the same across epochs | 01 D1.4, D1.10 rule 11, 06 section 11 |
 | cid | Client message id, the idempotency key everywhere (carried by the `Idempotency-Key` header over HTTP) | 01 D1.4 |
 | ack | Client frame `ack {applied: item_seq}`; the server's reply to a command is `result` | 01 D1.4 |
 | resume | Client cursor `resume: {after, epoch?}` sent in `hello` | 01 D1.4 |

@@ -149,7 +149,7 @@ Initial standard extensions: `org.cwp.deathlink`, `org.cwp.energylink`, `org.cwp
 **Why.** The notes record that DeathLink today is a client convention over generic relay packets with no server code (from the notes). That is flexible but has no schema, negotiation, or server-enforced rate limits and permissions; typed extensions add all three and keep relay-by-default. **Rejected.** Hard-coding every feature in core (bloat). An untyped "custom event" bag (the status quo problem). Arbitrary server plug-ins in the standard (not portable; server semantics only through a specified extension).
 
 #### D1.10 One envelope, two delivery classes, state paths and a type registry (proposed, D-123)
-**Status.** Proposed 2026-11-17, revised twice the same day after independent reviews; not yet accepted by the owner. If accepted it replaces the per-feature frames sketched in D1.3, D1.4 and D1.9, the integer rule of D1.6 and the `hello` and `welcome` field list of doc 09 section 4.6 with what follows. The concepts of those decisions (capabilities, one log with `seq`, one ack, `cid` dedupe, typed extensions with relay by default, the lobby fields) are kept; their wire shape changes. The examples in 4.2 and D5.4 use these forms.
+**Status.** Proposed 2026-11-17, revised three times the same day after independent reviews; not yet accepted by the owner. If accepted it replaces the per-feature frames sketched in D1.3, D1.4 and D1.9, the integer rule of D1.6 and the `hello` and `welcome` field list of doc 09 section 4.6 with what follows. The concepts of those decisions (capabilities, one log with `seq`, one ack, `cid` dedupe, typed extensions with relay by default, the lobby fields) are kept; their wire shape changes. The examples in 4.2 and D5.4 use these forms.
 
 **Choice.** CWP has a fixed set of frame kinds, each with one shape, and every feature (core or extension) is a registered *type* carried inside them. Adding a feature adds a registry entry, never a frame kind.
 
@@ -163,7 +163,7 @@ Initial standard extensions: `org.cwp.deathlink`, `org.cwp.energylink`, `org.cwp
 | `ack` | client | `{applied}` | none, or `error` |
 | `ping` | client | `{n?, p?}`: optional nonce and presence state, every `limits.hb_ms` (doc 09 5.5) | `pong` |
 | `welcome` | server | rule 9 | |
-| `result` | server | `{cid, seq?, epoch?, upto?, ok}` or `{cid, upto?, error}` | |
+| `result` | server | `{cid, seq?, epoch?, upto, ok}` or `{cid, upto, error}` | |
 | `pong` | server | `{n?}`, echoing the `ping`'s nonce | |
 | `event` | server | `{seq?, eseq?, type, slot?, t?, data}` | |
 | `error` | server | the D1.7 shape plus `ref?`: a problem not tied to a `cid` | |
@@ -182,10 +182,10 @@ Example exchange (one session, slot 3):
 
 1. **Messages and unknown frames.** A transport message carries one frame or a JSON array of frames, processed in order (a release that grants hundreds of items is one message). A receiver ignores a frame whose `op` it does not know; a server also answers it with `error` key `op.unknown`, and the session stays open. Enumerations a newer peer may extend are open: `retry`, item `source` and `flags`, `client.kind`, `caller.kind`, scopes, room roles, `resume.status` and `client_state` accept values the receiver does not know and read them as `other`. An unknown retry hint counts as `never`, an unknown scope or role grants nothing, an unknown resume status counts as `new_timeline`, and an item with an unknown source is still delivered.
 2. **Type names and their evolution.** Core types are bare lower-case dotted names (`check`, `item.grant`); extension types are `<extension id>/<name>` (`org.cwp.deathlink/death`). The extension must be enabled (rule 9) for the server to accept or send its types; otherwise the result is `ext.not_enabled`. Within a major, a type's `data` only gains optional fields; a breaking change is a new type name. Each registry entry records the protocol or extension minor that added it (`since`), and `welcome` reports the minor in use, so a client knows which types exist without probing. A type's lifecycle is its `status` (experimental, stable, deprecated, D1.8); it is not renamed when it is promoted, so D1.8's `x.` prefix is kept only for vendor experiments outside the registry. This replaces D1.9's `{"op":"ext"}` frame and the `ext.<id>.<type>` event names.
-3. **Results and dedupe.** Every `cmd`, `get`, `watch` and `unwatch` gets exactly one `result` carrying its `cid`. Dedupe applies to `cmd` only: the server keeps, per caller (rule 10), the `cid`, a fingerprint of `(type, data)` in canonical JSON, and the result, for at least 24 hours (D1.4). A repeat with the same fingerprint gets the first result again, with its original `seq` and `epoch`; a repeat with a different fingerprint gets `cid.conflict`, retry never. For `get`, `watch` and `unwatch` the `cid` only correlates the answer and must be unique among the session's open requests. Clients derive command ids from content where they can (`loc104` for a check) or make them random; a counter that restarts after a reconnect is a client bug that `cid.conflict` exposes.
+3. **Results and dedupe.** Every `cmd`, `get`, `watch` and `unwatch` gets exactly one `result` carrying its `cid`. Dedupe applies to `cmd` only: the server keeps, per caller (rule 10), the `cid`, a fingerprint of `(type, data)` in canonical JSON, and the result, for at least 24 hours (D1.4). A repeat with the same fingerprint gets the first result again, with its original `seq` and `epoch` (which may be older than the session's, after a room move); a repeat with a different fingerprint gets `cid.conflict`, retry never. Only successes and errors whose retry is `never` are kept: a retryable refusal (`rate.limited`, `room.paused`, `room.unavailable`) is not, so the retry with the same `cid` gets a fresh answer, and a client keeps such a command queued and resends it after `after_ms` or with backoff. For `get`, `watch` and `unwatch` the `cid` only correlates the answer and must be unique among the session's open requests. Clients derive command ids from content where they can (`loc104` for a check) or make them random; a counter that restarts after a reconnect is a client bug that `cid.conflict` exposes.
 4. **Ordering.** Per session:
    - Nothing precedes `welcome` except an `error` that ends the session.
-   - Replay: `welcome.replay` is `{from, to}`, the durable `seq` range the server is about to replay, both inclusive (absent when there is nothing to replay). Replay is complete once the session has received the event with `seq` = `to`. Durable events the session can see (rule 6) arrive in increasing `seq`, with gaps where an event is not visible to it; `seq` is gapless room-wide, not per session.
+   - Replay: `welcome.replay` is `{from, to}`, the durable `seq` range the server is about to replay, both inclusive (absent when there is nothing to replay). `from` is `resume.after` + 1, or earlier: the `seq` of the slot's first item above its applied cursor when that is at or before `after` (doc 02 D3 replays every such item, whatever cursor the client sent), or `recovered_head` + 1 on a new timeline (rule 12). A client ignores replayed events it already holds (items by `item_uid`). Replay is complete once the session has received the event with `seq` = `to`. Durable events the session can see (rule 6) arrive in increasing `seq`, with gaps where an event is not visible to it; `seq` is gapless room-wide, not per session.
    - Ephemeral events are held until replay is complete, then interleaved with durable events in the order the room produced them.
    - Durable events that a `cmd` committed, and that the session can see, arrive before its `result`. A result that committed durable events carries `seq` (the last one) and `epoch`. Every result carries `upto`, the last durable `seq` the server had sent to this session when it produced the result (which may be below `seq`, since not every committed event is visible to the session). Over HTTP the result travels on the request (transport table), so a client applies it once its stream has reached `upto`.
 5. **Delivery classes.** Each event type declares one. A *durable* event is in the log, carries `seq`, is replayed on resume and counts for `head`. An *ephemeral* event has no `seq`, is never stored and carries `eseq`, a per-session counter that increases by one for each ephemeral event sent to that session, so a client sees a gap if one was lost. On WebSocket a session whose queue is full is closed and resumes from its cursor (doc 11 R3); events are never dropped one by one. HTTP transports keep a short per-session buffer of ephemeral events (design value: 30 s or 256 events) addressed by `eseq`; after a gap the client calls `get` on its watched paths again. The registry, never the server case by case, decides the class.
@@ -208,7 +208,8 @@ Example exchange (one session, slot 3):
 
    - Grammar: segments of `A-Z a-z 0-9 . _ ~ -` or `%XX` (two upper-case hex digits) for any other byte. `.` and `..` segments are refused, and so is `%XX` for a character that needs no encoding. Numbers are canonical decimal (`slot/3`, never `slot/03`). Permissions are matched on parsed segments, never on string prefixes. A path not listed in the registry is refused (`path.unknown`); a listed one the caller may not read is refused (`path.forbidden`).
    - `ver`: every path has its own version, increasing by at least one on every change. For state backed by the log it is the `seq` of the change; for state that is not logged (presence) it is a per-path counter.
-   - Paging: a large value is returned in pages: `get` takes `after` and `limit`, and the result's `next` is the `after` for the following page. A `watch` returns the first page only.
+   - Paging: a large value is returned in pages: `get` takes `after` and `limit`, and the result's `next` is the `after` for the following page. A `watch` returns the first page only. For `slot/{n}/inventory`, `after` may also be an `item_seq` in decimal, to start after it.
+   - Filtered items: `item_seq` counts every grant to the slot, including those a session's `want.items` filters out. Such a session sees gaps in `item_seq` and must not treat them as missing items; its `ack` covers them.
    - Watches belong to the session and end with it; a new session watches again. A `state.changed` event is ephemeral, audience as the path's read rule, `data` `{path, value, ver, prev?, by?}`; for `kv` paths it carries `prev` (the value before) and `by` (the writing slot) and is sent on every write, even one that leaves the value unchanged.
    - `org.cwp.kv` writes are one `cmd` with an ordered list of operations, applied atomically by the room and logged as one durable event; its result is `{value, prev, ver}`, and an optional `if_ver` makes it a compare-and-set. The operation set, scopes and size limits belong to the extension's own spec.
 8. **Name tables over HTTP.** A game's name tables are served at `GET /games/{game id}/names/{checksum}.json`, cacheable forever. A game id is a reverse-domain id (`dev.example.mosscave`, the CGM id, D2.6), lower-case and path-safe; a world imported from another generator gets a synthesized id. The checksum is `sha256:` plus 64 hex digits of the canonical table. `welcome.names` maps each game id in the room to its checksum. `get game/{id}/names` is the fallback for clients with no HTTP client.
@@ -244,9 +245,9 @@ Example exchange (one session, slot 3):
    | `room`, `slot_state` | As in doc 09 4.6 |
 
    Heartbeat: the client sends `ping` every `limits.hb_ms`, with its presence state in `p`, and the server answers `pong`; a session silent for `hb_ms` times `hb_slack` is closed (doc 09 5.5). Servers never send `ping`. Mid-session, `cmd session.update {want?, exts?}` changes wants and enables or disables extensions; its result carries the new `exts`. Before `hello`, doc 09's limits apply (5 s, 4 KiB).
-10. **Callers and authority.** A session acts as one caller: `slot` (a slot token), `spectator` (an `observe` link), `integration` (a bot credential) or `account` (the host console, through a session or command ticket). `caller.scopes` are the token's (`play`, `observe`); `caller.roles` are the room roles (owner, co-host, moderator, doc 10 2.3). Each registry entry says who may send it (scopes, roles, whether step-up is required, in which room states), taken from doc 10's permissions matrix (2.4), which `perms.json` files reference. Admin actions (release for another slot, kick, pause) are ordinary `cmd` frames with role requirements; the web console sends them with `POST /cmd` carrying a command ticket (doc 10 7.3), never through a slot token. An `ack` from a caller with no slot, or beyond the last `item_seq` delivered, is refused with `ack.invalid`.
-11. **Items.** `item.grant` `data` is `{source, item, item_seq, item_uid, flags, from?, location?}`. `source` is `check`, `release`, `collect`, `link`, `start` or `admin`. `from` (the finding slot) and `location` (in `from`'s world) are present for `check`, `release`, `collect` and `link`, and absent for `start` and `admin`. `flags` lists `progression`, `useful`, `trap` (empty for filler). `item_uid` is `iu_` plus 26 Crockford base32 digits of a 128-bit hash: `H(room, from, location, receiver)` for location-based grants, `H(room, start, receiver, n)` for the n-th item of the seed's starting inventory, and `H(room, admin, receiver, caller, cid)` for a grant by a room role, so two slots of the same game, which share location ids, never collide, and every input comes from the seed or the logged command, not from arrival order; it is the same in every epoch (doc 06 6.4). This corrects D1.4's `H(room, location_id)`. The frame carries `t` (server time, informational, D1.4); D1.4's separate `id` is dropped, since `(epoch, seq)` and `item_uid` already identify events and items. Tournament rooms add `prev_hash` (D-31).
-12. **Resume outcomes.** `welcome.resume.status` is `ok` (replay follows), `too_old` (the server keeps no log this far back: there is no replay; the client reads `slot/{n}/inventory` in pages, applies the items above its applied cursor, deduplicating by `item_uid`, and continues live from `head`), or `new_timeline` (the room was restored or failed over to another history: `welcome.resume.epoch_change` is `{from, to, recovered_head, approx_lost_seconds?}`, and the client replays its journal of commands after `recovered_head`, doc 06 6.4, and follows D5.3 rule 2). This is the one meaning of `too_old`: it replaces D1.4's `resume.too_old` error with a snapshot pointer and D5.3 rule 3's snapshot request, and `resume.too_old` and `room.rolled_back` are no longer error keys. The wire `epoch` is doc 06 6.3's room epoch; the region epoch never appears on the wire. Moving a room between nodes changes `epoch` without changing history and is not shown to clients. A change of timeline while a session is open arrives as the durable event `room.epoch_change {from, to, recovered_head}` (doc 06 6.4).
+10. **Callers and authority.** A session acts as one caller: `slot` (a slot token), `spectator` (an `observe` link), `integration` (a bot credential) or `account` (the host console, through a session or command ticket). `caller.scopes` are the token's (`play`, `observe`); `caller.roles` are the room roles (owner, co-host, moderator, doc 10 2.3). Each registry entry says who may send it (scopes, roles, whether step-up is required, in which room states), taken from doc 10's permissions matrix (2.4), which `perms.json` files reference. Admin actions (release for another slot, kick, pause) are ordinary `cmd` frames with role requirements; the web console sends them with `POST /cmd` carrying a command ticket (doc 10 7.3), never through a slot token. An `ack` from a caller with no slot, or beyond the last `item_seq` delivered (the slot's highest `item_seq` sent to the session in an event or an inventory page, or the stored cursor), is refused with `ack.invalid`. An `ack` below the stored cursor lowers it: the game reloaded an older save, and the next resume replays from there.
+11. **Items.** `item.grant` `data` is `{source, item, item_seq, item_uid, flags, from?, location?}`. `source` is `check`, `release`, `collect`, `link`, `start` or `admin`. `from` (the finding slot) and `location` (in `from`'s world) are present for `check`, `release`, `collect` and `link`, and absent for `start` and `admin`. `flags` lists `progression`, `useful`, `trap` (empty for filler). `item_uid` is `iu_` plus 26 Crockford base32 digits of a 128-bit hash (so the first digit is 0 to 7). `H` is the first 128 bits of SHA-256 over the UTF-8 bytes of a canonical JSON array of its inputs: the room id as a string, then the kind as a string (`check` for every location-based source, `start`, `admin`), then slot numbers, ids and the `cid` as they appear on the wire, for example `["r_9TQ","check",3,104,1]`. The compat edge and a partner region compute the same uid from the same inputs. The hashes are `H(room, from, location, receiver)` for location-based grants, `H(room, start, receiver, n)` for the n-th item of the seed's starting inventory, and `H(room, admin, receiver, caller, cid)` for a grant by a room role, so two slots of the same game, which share location ids, never collide, and every input comes from the seed or the logged command, not from arrival order; it is the same in every epoch (doc 06 6.4). This corrects D1.4's `H(room, location_id)`. The frame carries `t` (server time, informational, D1.4); D1.4's separate `id` is dropped, since `(epoch, seq)` and `item_uid` already identify events and items. Tournament rooms add `prev_hash` (D-31).
+12. **Resume outcomes.** `resume.epoch` is required when `resume.after` is above 0; a resume without it is treated as coming from epoch 0. A change of timeline closes every open session with `room.moving` (retry after), so clients only learn of it through `welcome`; the `room.epoch_change` event it writes at `recovered_head` + 1 reaches them in the replay. `welcome.resume.status` is `ok` (replay follows), `too_old` (the server keeps no log this far back: there is no replay; the client reads `slot/{n}/inventory` in pages, applies the items above its applied cursor, deduplicating by `item_uid`, and continues live from `head`), or `new_timeline` (the room was restored or failed over to another history: `welcome.resume.epoch_change` is `{from, to, recovered_head, approx_lost_seconds?}`, and the client replays its journal of commands after `recovered_head`, doc 06 6.4, and follows D5.3 rule 2). This is the one meaning of `too_old`: it replaces D1.4's `resume.too_old` error with a snapshot pointer and D5.3 rule 3's snapshot request, and `resume.too_old` and `room.rolled_back` are no longer error keys. The wire `epoch` is doc 06 6.3's room epoch; the region epoch never appears on the wire. Moving a room between nodes changes `epoch` without changing history and is not shown to clients. The durable event `room.epoch_change {from, to, recovered_head}` records the change in the log (doc 06 6.4).
 13. **Ending a session.** Before it closes a session, the server sends `error` with the reason: `room.moving` (retry after), `slot.in_use` (another device took over, doc 09 11.2), `auth.token_revoked`, `room.kicked`.
 14. **One registry is the source of truth.** Each type has an entry: `type`; `kind` (`cmd` or `event`); for events `delivery`, `audience` and `spoiler`; for commands who may send it (rule 10), the JSON Schema of its `result.ok` and the error keys it can return; the JSON Schema of `data`; the most bytes its `data` may take and a rate limit; `status` and `since`; for relays, the standard `to: {slots?}` field the server reads without knowing the rest of the schema (absent means the audience; the sender gets no echo unless it is in `to`); and, for events shown to people, display templates. Templates have typed placeholders, `{field:kind}` or `{field:kind@slotfield}` (`{item:item@slot}` is an item id resolved in the game of the slot named by the frame's `slot`; `{location:location@from}` resolves in the finder's game), and variants chosen by a condition: `a=b` compares two fields (`when: "from=slot"` for "found their own"), `a:v` compares a field with a literal (`when: "source:start"`); the last variant has no condition. Every registry entry for a command also gives its room states and an optional per-type rate; outside those states the answer is `room.not_live` or `room.paused` (doc 09 4.7). Clients render templates into typed parts (player, item with its flags, location, text) and style them as they like. English templates live in the registry as the fallback; translations live in the i18n bundles (D2.4). SDK types, the conformance tests (bad payload, repeated `cid`, conflicting `cid`, permission denied, for every command) and the compat edge's mapping tables are generated from the registry. Servers send typed events only.
 15. **Integers.** Every integer in CWP is within plus or minus 2^53 - 1 (the range every JSON parser holds exactly). This withdraws D1.6's rule of decimal strings above 2^53. Our ids (D2.6) and the ids of worlds from other generators fit, and `seq`, `item_seq` and `epoch` would take centuries to reach it. A frame with a larger integer is refused.
@@ -551,7 +552,7 @@ sequenceDiagram
 4. After 5 minutes disconnected (estimated), show a visible non-blocking notice; play never stops.
 
 #### D5.4 A minimal viable client, in about 100 lines
-Python-like pseudocode over JSON and WebSocket, in the D1.10 forms (proposed): connect, resume, items in strict order, an inventory read when the cursor is too old, checks, acks, heartbeat, backoff. Counted: 74 non-blank lines for the sketch below (the revocation check is omitted); treat "about 100 lines" as the budget for a real client with logging and error text.
+Python-like pseudocode over JSON and WebSocket, in the D1.10 forms (proposed): connect, resume with the saved epoch, items in strict order and deduplicated by `item_uid`, an inventory read when the cursor is too old (live items wait until it ends), checks that survive retryable refusals, acks, heartbeat, backoff. Counted: 94 non-blank lines for the sketch below (the revocation check is omitted); treat "about 100 lines" as the budget for a real client with logging and error text.
 
 ```python
 import json, random, time, websocket   # any WS library works
@@ -559,7 +560,7 @@ import json, random, time, websocket   # any WS library works
 class Client:
     def __init__(self, url, token, game, save):   # game: id, version, data_checksum, on_item, poll_checks, write_save
         self.url, self.token, self.game, self.save = url, token, game, save
-        self.pending, self.attempt = {}, 0                   # cid -> frame, flushed on reconnect
+        self.pending, self.retry_at, self.attempt = {}, {}, 0   # cid -> frame; cid -> resend time
 
     def run(self):
         while True:
@@ -577,18 +578,21 @@ class Client:
         return msg if isinstance(msg, list) else [msg]
 
     def session(self):
-        ws, g = websocket.create_connection(self.url, subprotocols=["cwp.v1.json"]), self.game
+        ws, g, sv = websocket.create_connection(self.url, subprotocols=["cwp.v1.json"]), self.game, self.save
+        resume = {"after": sv.get("seq", 0), "epoch": sv.get("epoch", 0)}
         self.send(ws, {"op": "hello", "proto": [1], "token": self.token, "client": {"kind": "game"},
                        "game": {"id": g.id, "version": g.version}, "data_checksum": g.data_checksum,
-                       "resume": {"after": self.save.get("seq", 0)}})
+                       "resume": resume})
         welcome, *rest = self.frames(ws)
         if welcome["op"] == "error":                         # show localized text for this key
             raise SystemExit(welcome["key"]) if welcome["retry"] == "never" else ConnectionError(welcome["key"])
         self.slot, status = welcome["caller"]["slot"], welcome["resume"]["status"]
         if status not in ("ok", "too_old"):
             raise SystemExit("room.rolled_back")             # D5.3 rule 2: keep the save, ask the person
-        if status == "too_old":                              # no replay: read the inventory in pages
-            self.send(ws, {"op": "get", "cid": "inv", "path": f"slot/{self.slot}/inventory"})
+        sv["epoch"], self.head, self.held = welcome["epoch"], welcome["head"], []
+        self.paging = status == "too_old"                    # no replay: read the inventory in pages
+        if self.paging:
+            self.get_inventory(ws, str(sv.get("applied", 0)))
         self.attempt, hb, next_ping = 0, welcome["limits"]["hb_ms"] / 1000, 0
         for frame in self.pending.values():                  # flush queued checks
             self.send(ws, frame)
@@ -596,9 +600,14 @@ class Client:
             self.handle(ws, msg)
         ws.settimeout(0.2)
         while True:
-            if time.monotonic() >= next_ping:                # the client keeps the heartbeat
+            now = time.monotonic()
+            if now >= next_ping:                             # the client keeps the heartbeat
                 self.send(ws, {"op": "ping"})
-                next_ping = time.monotonic() + hb
+                next_ping = now + hb
+            for cid, at in list(self.retry_at.items()):      # resend after a retryable refusal
+                if now >= at:
+                    del self.retry_at[cid]
+                    self.send(ws, self.pending[cid])
             for loc in g.poll_checks():
                 frame = {"op": "cmd", "cid": f"loc{loc}", "type": "check", "data": {"location": loc}}
                 self.pending[frame["cid"]] = frame           # cid from content: safe retry
@@ -609,35 +618,48 @@ class Client:
             except websocket.WebSocketTimeoutException:
                 continue
 
+    def get_inventory(self, ws, after):
+        self.send(ws, {"op": "get", "cid": "inv", "path": f"slot/{self.slot}/inventory", "after": after})
+
     def apply(self, ws, grant, seq):
-        n, applied = grant["item_seq"], self.save.get("applied", 0)
-        if n <= applied:
+        sv, n, uid = self.save, grant["item_seq"], grant["item_uid"]
+        if uid in sv.setdefault("uids", []) or n <= sv.get("applied", 0):
             return                                           # already applied: a replayed duplicate
-        if n != applied + 1:
+        if n != sv.get("applied", 0) + 1:
             raise ConnectionError("item gap")                # reconnect; the server replays from the cursor
         if self.game.on_item(grant):
-            self.save["applied"] = n
-            self.save["seq"] = max(seq or 0, self.save.get("seq", 0))
-            self.game.write_save(self.save)                  # persist before acking
+            sv["applied"] = n
+            sv["uids"].append(uid)
+            sv["seq"] = max(seq or 0, sv.get("seq", 0))
+            self.game.write_save(sv)                         # persist before acking
             self.send(ws, {"op": "ack", "applied": n})
 
     def handle(self, ws, msg):
         op = msg.get("op")
         if op == "event" and msg["type"] == "item.grant" and msg["slot"] == self.slot:
-            self.apply(ws, msg["data"], msg["seq"])
+            if self.paging:
+                self.held.append(msg)                        # live items wait for the inventory
+            else:
+                self.apply(ws, msg["data"], msg["seq"])
         elif op == "result" and msg["cid"] == "inv" and "ok" in msg:
             for grant in msg["ok"]["value"]:                 # inventory pages hold item.grant data
                 self.apply(ws, grant, None)
             if msg["ok"].get("next"):
-                self.send(ws, {"op": "get", "cid": "inv", "path": f"slot/{self.slot}/inventory",
-                               "after": msg["ok"]["next"]})
+                self.get_inventory(ws, msg["ok"]["next"])
+            else:                                            # last page: catch up, then go live
+                self.paging, self.save["seq"] = False, max(self.head, self.save.get("seq", 0))
+                for held in self.held:
+                    self.apply(ws, held["data"], held["seq"])
+        elif op == "result" and "error" in msg and msg["error"]["retry"] != "never":
+            delay = msg["error"].get("after_ms", 1000 * 2 ** self.attempt) / 1000
+            self.retry_at[msg["cid"]] = time.monotonic() + delay   # keep it queued
         elif op == "result":
             self.pending.pop(msg["cid"], None)
         elif op == "error":
             raise SystemExit(msg["key"]) if msg["retry"] == "never" else ConnectionError(msg["key"])
 ```
 
-Unknown ops and event types fall through ignored, as required. An `error` with a retry hint other than `never` (a room move, rule 13) ends the session and reconnects with backoff.
+Unknown ops and event types fall through ignored, as required. An `error` frame with a retry hint other than `never` (a room move, rule 13) ends the session and reconnects with backoff. The sketch wants every item (the `want.items` default), so a gap in `item_seq` really is a missing item.
 
 ### 3.7 Registry and distribution
 **Choice.** A **registry** is a set of signed, content-addressed objects: manifests (by hash), ledgers, i18n bundles, CPKs, connector profiles, and (reserved) world modules. Anyone may host one; the standard defines the index format (`/index.json` with signed entries) and the publishing API. Games declare dependencies by hash, not name and "latest". Clients and servers may mirror.
@@ -831,7 +853,7 @@ A player reconnects, catches up, sends a check, and a shared countdown starts. F
 {"op":"event","seq":42,"type":"item.grant","slot":3,
  "data":{"source":"check","from":1,"location":17,"item":1,"item_seq":7,"item_uid":"iu_7QK2M4XH7QK2M4XH7QK2M4XH7Q","flags":["progression"]}}
 {"op":"event","seq":57,"type":"item.grant","slot":3,
- "data":{"source":"check","from":2,"location":9,"item":2,"item_seq":8,"item_uid":"iu_C9R1T0WBC9R1T0WBC9R1T0WBC9","flags":[]}}
+ "data":{"source":"check","from":2,"location":9,"item":2,"item_seq":8,"item_uid":"iu_4C9R1T0WBC9R1T0WBC9R1T0WBC","flags":[]}}
 
 // client -> server: applied up to item_seq 8 (game saved it)
 {"op":"ack","applied":8}
@@ -841,7 +863,7 @@ A player reconnects, catches up, sends a check, and a shared countdown starts. F
 
 // server -> client: the check's visible events, then its result
 {"op":"event","seq":59,"type":"location.checked","slot":3,"data":{"location":3}}
-{"op":"result","cid":"loc3","seq":60,"epoch":3,"upto":59,"ok":{"items":[{"to":1,"item":4,"flags":[],"item_uid":"iu_F2D8N5PAF2D8N5PAF2D8N5PAF2"}]}}
+{"op":"result","cid":"loc3","seq":60,"epoch":3,"upto":59,"ok":{"items":[{"to":1,"item":4,"flags":[],"item_uid":"iu_3F2D8N5PAF2D8N5PAF2D8N5PAF"}]}}
 
 // server -> all subscribed slots: countdown (server semantics)
 {"op":"event","seq":61,"type":"org.cwp.countdown/start",
