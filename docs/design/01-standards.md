@@ -175,7 +175,7 @@ Example exchange (one session, slot 3):
 {"op":"cmd","cid":"loc104","type":"check","data":{"location":104}}
 {"op":"event","seq":2201,"type":"location.checked","slot":3,"data":{"location":104}}
 {"op":"event","seq":2202,"type":"item.grant","slot":3,"data":{"source":"check","from":3,"location":104,"item":7,"item_seq":12,"item_uid":"iu_7QK2M4XH","flags":["progression"]}}
-{"op":"result","cid":"loc104","seq":2202,"epoch":3,"ok":{}}
+{"op":"result","cid":"loc104","seq":2202,"epoch":3,"ok":{"items":[{"to":3,"item":7,"flags":["progression"]}]}}
 {"op":"event","eseq":5,"type":"org.cwp.deathlink/death","slot":2,"data":{"cause":"fell in a pit"}}
 ```
 
@@ -195,7 +195,7 @@ Example exchange (one session, slot 3):
    |---|---|---|
    | `room/info` | seed name, room state, spoiler and race mode, hint cost and points per check, release, collect and remaining modes, server time | room |
    | `room/slots` | every slot: number, name, alias, game id, kind, group members | room |
-   | `slot/{n}/status` | `connection` (online, offline), `client_state` (the client's own claim: menu, playing), `goal` (bool). Lobby readiness is the lobby's, under `ext/org.cwp.lobby/...` (doc 09 5.3). | room |
+   | `slot/{n}/status` | `connection` (online, offline), `client_state` (the client's own claim: ready, playing), `goal` (bool). Lobby readiness is the lobby's, under `ext/org.cwp.lobby/...` (doc 09 5.3). | room |
    | `slot/{n}/locations` | checked and missing location ids | subject, spoiler for others |
    | `slot/{n}/inventory` | items granted, in `item_seq` order (paged) | subject |
    | `slot/{n}/slot_data` | the slot's generator data (paged) | subject; others only if the seed marks it public |
@@ -266,7 +266,7 @@ Tokens never appear in a URL (D1.2); only the single-use connect ticket may, bec
 
 | Feature | Home |
 |---|---|
-| Checks, goal, client state | core `check`, `goal`, `status.set` |
+| Checks, goal, client state | core `check` (its result lists the items the location held, so the finder learns what it sent), `goal`, `status.set` |
 | Items, including starting inventory, release, collect and item links | core `item.grant` (rule 11) |
 | Location state, inventory, slot data, name tables and groups, room info | state paths (rule 7) |
 | Wants and extensions mid-session | core `session.update` |
@@ -819,17 +819,17 @@ A player reconnects, catches up, sends a check, and a shared countdown starts. F
 
 // server -> client: the check's visible events, then its result
 {"op":"event","seq":59,"type":"location.checked","slot":3,"data":{"location":3}}
-{"op":"result","cid":"loc3","seq":59,"epoch":3,"ok":{}}
+{"op":"result","cid":"loc3","seq":60,"epoch":3,"ok":{"items":[{"to":1,"item":4,"flags":[]}]}}
 
 // server -> all subscribed slots: countdown (server semantics)
-{"op":"event","seq":60,"type":"org.cwp.countdown/start",
+{"op":"event","seq":61,"type":"org.cwp.countdown/start",
  "data":{"id":"race-start","starts_at_ms":1790000010000,"duration_ms":10000,"ask":"race-start"}}
 
 // client -> server
 {"op":"cmd","cid":"cd1","type":"org.cwp.countdown/ready","data":{"ask":"race-start"}}
 ```
 
-The item found at location 3 belonged to slot 1, so this session sees only `location.checked`; slot 1's sessions see the `item.grant`.
+The item found at location 3 belonged to slot 1, so this session sees only `location.checked` (seq 59) and learns what it sent from the result; slot 1's sessions see the `item.grant` (seq 60).
 
 ## 5. Risks
 | Risk | Why it matters | Plan |
