@@ -67,7 +67,7 @@ Every class speaks the frames of doc 01 (`hello`, `welcome`, `event`, `ack`, `pi
 | Host console (3.6) | HTTPS commands plus one WebSocket or SSE board channel (`want:["lobby.host"]`) | Owner's dashboard | Account session plus account-bound room role (doc 10 section 2.4) | `console`; commands carry `cid` | Board rebuilds from `lobby.snapshot` plus events |
 | Old Archipelago-style client (3.7) | Their WebSocket on the compat edge; no fallback possible | Hostname `{room_key}.{host}` or path form (doc 01 3.8.1) | Slot token in the password field, scope fixed to `play` | What it already sends; the edge fills the rest | Its own backoff |
 
-Notes for the SDK game. The SDK stores the token in the game's save or a sidecar (doc 01 D5.1 rule 1). Replay is idempotent by `item_uid`; if `head` is lower than the client's last `seq`, the server answers `room.rolled_back` (doc 01 D5.3, doc 06 6.4). The SDK never blocks the game thread; it collects readiness facts and the game answers `on_probe` callbacks.
+Notes for the SDK game. The SDK stores the token in the game's save or a sidecar (doc 01 D5.1 rule 1). Replay is idempotent by `item_uid`; if `head` is lower than the client's last `seq`, the server answers `room.rolled_back` (doc 01 D1.10 rule 12, proposed: `welcome.resume.status` is `new_timeline` with `epoch_change`; `room.rolled_back` is no longer a server answer) (doc 01 D5.3, doc 06 6.4). The SDK never blocks the game thread; it collects readiness facts and the game answers `on_probe` callbacks.
 
 CSDK additions for the lobby: `join.start(link or room_key)` begins a handoff (4.3); `lobby.facts()` returns version, data checksum, applied slot-data hash, game-loaded flag and last probe results; `on_slot_data(data, hash)` lets the game apply slot data (SDK reports `applied` plus the hash or a reject reason); `on_probe(level, nonce)` is the optional hook for p1 and p2 (5.4); `lobby.set_presence(state)` takes `menu`, `loading`, `loaded`, `in_play`, `hidden`; `diag.run()` runs the web diagnostic checks (section 9).
 
@@ -183,7 +183,7 @@ Nothing for browser, SDK game via H1, bot, spectator and host (signed in). The 8
 
 ### 4.6 The first-frame handshake
 
-The first frame on any transport is `hello`. It extends doc 01 D1.3 with the fields the lobby needs. A server refuses to proceed if the first frame is missing within 5 s or exceeds 4 KiB (design values, 11.4).
+The first frame on any transport is `hello`. It extends doc 01 D1.3 with the fields the lobby needs. (If D-123 is accepted, doc 01 D1.10 rule 9 owns the field list: it keeps every field below, makes `exts` values `{v: [majors], opts}` with the extension's own block in `opts`, turns `want` into a typed object whose `streams` list carries `lobby` and `lobby.host`, and replaces `welcome.slot` and the role with `welcome.slot` plus `welcome.caller`.) A server refuses to proceed if the first frame is missing within 5 s or exceeds 4 KiB (design values, 11.4).
 
 ```json
 // client -> server  (comments are explanatory only)
@@ -321,7 +321,7 @@ A probe is a request frame `lobby.probe {id, level, nonce}` and a reply `lobby.p
 
 ### 5.5 Heartbeat, presence, latency
 
-**Choice.** One heartbeat, not two: `ping`/`pong` (doc 01 D1.5) is the liveness signal, initiated by the client at `hb_ms` (15 s in staging, 30 s in live, estimated design values, advertised in `welcome.limits.hb_ms`) and answered by the edge, which stamps `last_seen` (doc 06 5.4). A `pong` may carry a small `p` field with the presence state. A separate `lobby.presence` frame exists only for state **changes** between heartbeats (menu to loading to loaded, hidden to active).
+**Choice.** One heartbeat, not two: `ping`/`pong` (doc 01 D1.5) is the liveness signal, initiated by the client at `hb_ms` (15 s in staging, 30 s in live, estimated design values, advertised in `welcome.limits.hb_ms`) and answered by the edge, which stamps `last_seen` (doc 06 5.4). A `pong` may carry a small `p` field with the presence state. (Doc 01 D1.10, proposed: the client sends `ping` with `p`, and the server answers `pong`.) A separate `lobby.presence` frame exists only for state **changes** between heartbeats (menu to loading to loaded, hidden to active).
 
 Derived presence (server side): `connected` while a heartbeat is fresh within `hb_ms x 2.5`; `away` when the client reported `hidden` or 2 to 4 beats are missed; `disconnected` when the socket is closed for 10 s (flap suppression, estimated) or 4 beats are missed. RTT is measured at the edge from the ping exchange, and the edge also knows the backbone RTT to the home region (doc 06 5.2). The board shows `rtt_edge` and `rtt_total`. **Why.** One timer is cheaper on battery and bandwidth than a second presence frame, and the edge answering keeps a degraded backbone from causing mass false disconnects (doc 06 5.4). **Rejected.** Client-reported latency as displayed truth (forgeable; used only for the countdown clock offset, clamped against the server's RTT, 7.4). A 1 s presence tick (about 15 times the frame rate of a 15 s heartbeat for no new information, counted by arithmetic).
 
@@ -335,7 +335,7 @@ Derived presence (server side): `connected` while a heartbeat is fresh within `h
 | Heartbeats, RTT samples, probe frames | No | High volume, no value later; soft state at the edge and room actor |
 | Diagnostic reports | No (short-retention store, 9.4) | Privacy |
 
-**Audience.** Lobby events carry an audience: public room events (`slot: null`: state names, seat names, ready dots, counts), host-only events (`aud:"host"`: versions, latency, reasons, probe results, IP class) and own-seat events (`slot: n`). This proposes one optional event field, `aud`, for doc 01 D1.4. Players see everyone's name and ready dot, nothing else about other players; spectators get only the public form.
+**Audience.** (If D-123 is accepted, doc 01 D1.10 rule 6 replaces the `aud` field: each lobby event type declares its audience in the registry, and host-only and public views become separate event types or paths with their own read rules.) Lobby events carry an audience: public room events (`slot: null`: state names, seat names, ready dots, counts), host-only events (`aud:"host"`: versions, latency, reasons, probe results, IP class) and own-seat events (`slot: n`). This proposes one optional event field, `aud`, for doc 01 D1.4. Players see everyone's name and ready dot, nothing else about other players; spectators get only the public form.
 
 ## 6. The host readiness board
 
@@ -525,7 +525,7 @@ sequenceDiagram
 
 ### 8.2 Messages
 
-**Naming.** Names like `lobby.ready` are shorthand. On the wire (doc 01 D1.9) a client frame is `{"op":"ext","ext":"org.cwp.lobby","type":"ready", ...}`, so the `type` is the text after `lobby.`; server events arrive as `ext.org.cwp.lobby.<name>` (for example `ext.org.cwp.lobby.slot.ready`). The countdown events are `ext.org.cwp.countdown.start`, `.aborted`, `.go`. Every row below gives the `type` or event name.
+**Naming.** Names like `lobby.ready` are shorthand. (If D-123 is accepted the wire form is doc 01 D1.10's: `{"op":"cmd","type":"org.cwp.lobby/ready",...}` and events typed `org.cwp.lobby/<name>`.) On the wire (doc 01 D1.9) a client frame is `{"op":"ext","ext":"org.cwp.lobby","type":"ready", ...}`, so the `type` is the text after `lobby.`; server events arrive as `ext.org.cwp.lobby.<name>` (for example `ext.org.cwp.lobby.slot.ready`). The countdown events are `ext.org.cwp.countdown.start`, `.aborted`, `.go`. Every row below gives the `type` or event name.
 
 Client to server (all carry `cid`; dedupe per `(slot, cid)` for 24 h, doc 01 D1.4, D-13):
 
