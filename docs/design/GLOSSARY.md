@@ -33,7 +33,7 @@ Internal draft, 2026-11-16, proposed and not final. One line per term, with the 
 | join link | `https://{host}/j/{room_key}#{invite_secret}`; per-slot and spectator links are named variants | 09 section 4.2 |
 | seq | Room-wide event log position, gapless | 01 D1.4 |
 | item_seq | Per-slot delivery index derived from the log, carried on item events | 01 D1.4 |
-| item_uid | Stable item identity, `H(room, location_id)`, the same across epochs | 01 D1.4, 06 section 11 |
+| item_uid | Stable item identity, `H(room, from, location, receiver)` for location-based grants (`H(room, source, receiver, n)` otherwise), the same across epochs | 01 D1.4, D1.10 rule 11, 06 section 11 |
 | cid | Client message id, the idempotency key everywhere (carried by the `Idempotency-Key` header over HTTP) | 01 D1.4 |
 | ack | Client frame `ack {applied: item_seq}`; the server's reply to a command is `result` | 01 D1.4 |
 | resume | Client cursor `resume: {after, epoch?}` sent in `hello` | 01 D1.4 |
@@ -51,6 +51,10 @@ Internal draft, 2026-11-16, proposed and not final. One line per term, with the 
 | account | A person or organization identity; proves nothing about any room | 10 section 2.1 |
 | guest | A random participant id plus a slot token; no email | 10 section 2.2 |
 | principal | A guest id or an account id | 09 section 2 |
+| caller | Who a CWP session acts as: a slot, a spectator link, an integration or an account, with its scopes and room roles (`welcome.caller`) | 01 D1.10 rule 10 |
+| state path | A readable, watchable piece of room state (`slot/3/status`), with a read rule and a version `ver` | 01 D1.10 rule 7 |
+| delivery class | Durable (logged, has `seq`) or ephemeral (live only, has the per-session `eseq`), declared per event type | 01 D1.10 rule 5 |
+| audience | Who may see an event type: room, subject, players or roles | 01 D1.10 rule 6 |
 | slot, seat | The game seat in a room: "slot" in the protocol and schema, "seat" in lobby and UI copy | 09 section 2, 10 section 2.1 |
 | room role | An account's row in the room's role table: owner, co-host or moderator; "host" is informal for owner or co-host | 10 sections 2.3, 2.4 |
 | platform moderator | Our staff, distinct from the room role moderator | 04 section 7.8 |

@@ -183,7 +183,7 @@ Nothing for browser, SDK game via H1, bot, spectator and host (signed in). The 8
 
 ### 4.6 The first-frame handshake
 
-The first frame on any transport is `hello`. It extends doc 01 D1.3 with the fields the lobby needs. A server refuses to proceed if the first frame is missing within 5 s or exceeds 4 KiB (design values, 11.4).
+The first frame on any transport is `hello`. It extends doc 01 D1.3 with the fields the lobby needs. (If D-123 is accepted, doc 01 D1.10 rule 9 owns the field list: it keeps every field below, makes `exts` values `{v: [majors], opts}` with the extension's own block in `opts`, turns `want` into a typed object whose `streams` list carries `lobby` and `lobby.host`, and replaces `welcome.slot` and the role with `welcome.slot` plus `welcome.caller`.) A server refuses to proceed if the first frame is missing within 5 s or exceeds 4 KiB (design values, 11.4).
 
 ```json
 // client -> server  (comments are explanatory only)
