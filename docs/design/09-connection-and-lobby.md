@@ -335,7 +335,7 @@ Derived presence (server side): `connected` while a heartbeat is fresh within `h
 | Heartbeats, RTT samples, probe frames | No | High volume, no value later; soft state at the edge and room actor |
 | Diagnostic reports | No (short-retention store, 9.4) | Privacy |
 
-**Audience.** Lobby events carry an audience: public room events (`slot: null`: state names, seat names, ready dots, counts), host-only events (`aud:"host"`: versions, latency, reasons, probe results, IP class) and own-seat events (`slot: n`). This proposes one optional event field, `aud`, for doc 01 D1.4. Players see everyone's name and ready dot, nothing else about other players; spectators get only the public form.
+**Audience.** (If D-123 is accepted, doc 01 D1.10 rule 6 replaces the `aud` field: each lobby event type declares its audience in the registry, and host-only and public views become separate event types or paths with their own read rules.) Lobby events carry an audience: public room events (`slot: null`: state names, seat names, ready dots, counts), host-only events (`aud:"host"`: versions, latency, reasons, probe results, IP class) and own-seat events (`slot: n`). This proposes one optional event field, `aud`, for doc 01 D1.4. Players see everyone's name and ready dot, nothing else about other players; spectators get only the public form.
 
 ## 6. The host readiness board
 
@@ -525,7 +525,7 @@ sequenceDiagram
 
 ### 8.2 Messages
 
-**Naming.** Names like `lobby.ready` are shorthand. On the wire (doc 01 D1.9) a client frame is `{"op":"ext","ext":"org.cwp.lobby","type":"ready", ...}`, so the `type` is the text after `lobby.`; server events arrive as `ext.org.cwp.lobby.<name>` (for example `ext.org.cwp.lobby.slot.ready`). The countdown events are `ext.org.cwp.countdown.start`, `.aborted`, `.go`. Every row below gives the `type` or event name.
+**Naming.** Names like `lobby.ready` are shorthand. (If D-123 is accepted the wire form is doc 01 D1.10's: `{"op":"cmd","type":"org.cwp.lobby/ready",...}` and events typed `org.cwp.lobby/<name>`.) On the wire (doc 01 D1.9) a client frame is `{"op":"ext","ext":"org.cwp.lobby","type":"ready", ...}`, so the `type` is the text after `lobby.`; server events arrive as `ext.org.cwp.lobby.<name>` (for example `ext.org.cwp.lobby.slot.ready`). The countdown events are `ext.org.cwp.countdown.start`, `.aborted`, `.go`. Every row below gives the `type` or event name.
 
 Client to server (all carry `cid`; dedupe per `(slot, cid)` for 24 h, doc 01 D1.4, D-13):
 

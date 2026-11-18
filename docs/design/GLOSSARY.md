@@ -54,7 +54,7 @@ Internal draft, 2026-11-16, proposed and not final. One line per term, with the 
 | caller | Who a CWP session acts as: a slot, a spectator link, an integration or an account, with its scopes and room roles (`welcome.caller`) | 01 D1.10 rule 10 |
 | state path | A readable, watchable piece of room state (`slot/3/status`), with a read rule and a version `ver` | 01 D1.10 rule 7 |
 | delivery class | Durable (logged, has `seq`) or ephemeral (live only, has the per-session `eseq`), declared per event type | 01 D1.10 rule 5 |
-| audience | Who may see an event type: room, subject, players or roles | 01 D1.10 rule 6 |
+| audience | Who may see an event type: room, subject, players, roles, or path (the read rule of the path a `state.changed` names); an event type may also name a stream whose sessions see every event of it | 01 D1.10 rule 6 |
 | slot, seat | The game seat in a room: "slot" in the protocol and schema, "seat" in lobby and UI copy | 09 section 2, 10 section 2.1 |
 | room role | An account's row in the room's role table: owner, co-host or moderator; "host" is informal for owner or co-host | 10 sections 2.3, 2.4 |
 | platform moderator | Our staff, distinct from the room role moderator | 04 section 7.8 |
